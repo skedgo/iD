@@ -7,10 +7,6 @@ iD.ui.intro.line = function(context, reveal) {
         title: 'intro.lines.title'
     };
 
-    function one(target, e, f) {
-        d3.selection.prototype.one.call(target, e, f);
-    }
-
     function timeout(f, t) {
         timeouts.push(window.setTimeout(f, t));
     }
@@ -19,11 +15,11 @@ iD.ui.intro.line = function(context, reveal) {
 
         var centroid = [-85.62830, 41.95699];
         var midpoint = [-85.62975395449628, 41.95787501510204];
-        var start = [-85.6297754121684, 41.9583158176903];
+        var start = [-85.6297754121684, 41.95805253325314];
         var intersection = [-85.62974496187628, 41.95742515554585];
 
         context.map().centerZoom(start, 18);
-        reveal('button.add-line', t('intro.lines.add'), {tooltipClass: 'intro-areas-add'});
+        reveal('button.add-line', t('intro.lines.add'), {tooltipClass: 'intro-lines-add'});
 
         context.on('enter.intro', addLine);
 
@@ -32,12 +28,12 @@ iD.ui.intro.line = function(context, reveal) {
             context.on('enter.intro', drawLine);
 
             var padding = 150 * Math.pow(2, context.map().zoom() - 18);
-            var pointBox = iD.ui.intro.pad(context.projection(start), padding);
+            var pointBox = iD.ui.intro.pad(start, padding, context);
             reveal(pointBox, t('intro.lines.start'));
 
             context.map().on('move.intro', function() {
                 padding = 150 * Math.pow(2, context.map().zoom() - 18);
-                pointBox = iD.ui.intro.pad(context.projection(start), padding);
+                pointBox = iD.ui.intro.pad(start, padding, context);
                 reveal(pointBox, t('intro.lines.start'), {duration: 0});
             });
         }
@@ -48,12 +44,12 @@ iD.ui.intro.line = function(context, reveal) {
             context.on('enter.intro', retry);
 
             var padding = 300 * Math.pow(2, context.map().zoom() - 19);
-            var pointBox = iD.ui.intro.pad(context.projection(midpoint), padding);
+            var pointBox = iD.ui.intro.pad(midpoint, padding, context);
             reveal(pointBox, t('intro.lines.intersect'));
 
             context.map().on('move.intro', function() {
                 padding = 300 * Math.pow(2, context.map().zoom() - 19);
-                pointBox = iD.ui.intro.pad(context.projection(midpoint), padding);
+                pointBox = iD.ui.intro.pad(midpoint, padding, context);
                 reveal(pointBox, t('intro.lines.intersect'), {duration: 0});
             });
         }
@@ -61,7 +57,7 @@ iD.ui.intro.line = function(context, reveal) {
         // ended line before creating intersection
         function retry(mode) {
             if (mode.id !== 'select') return;
-            var pointBox = iD.ui.intro.pad(context.projection(intersection), 30);
+            var pointBox = iD.ui.intro.pad(intersection, 30, context);
             reveal(pointBox, t('intro.lines.restart'));
             timeout(function() {
                 context.replace(iD.actions.DeleteMultiple(mode.selectedIDs()));
@@ -78,12 +74,12 @@ iD.ui.intro.line = function(context, reveal) {
                 context.on('enter.intro', enterSelect);
 
                 var padding = 900 * Math.pow(2, context.map().zoom() - 19);
-                var pointBox = iD.ui.intro.pad(context.projection(centroid), padding);
+                var pointBox = iD.ui.intro.pad(centroid, padding, context);
                 reveal(pointBox, t('intro.lines.finish'));
 
                 context.map().on('move.intro', function() {
                     padding = 900 * Math.pow(2, context.map().zoom() - 19);
-                    pointBox = iD.ui.intro.pad(context.projection(centroid), padding);
+                    pointBox = iD.ui.intro.pad(centroid, padding, context);
                     reveal(pointBox, t('intro.lines.finish'), {duration: 0});
                 });
             }
@@ -95,6 +91,10 @@ iD.ui.intro.line = function(context, reveal) {
             context.on('enter.intro', null);
             d3.select('#curtain').style('pointer-events', 'all');
 
+            presetCategory();
+        }
+
+        function presetCategory() {
             timeout(function() {
                 d3.select('#curtain').style('pointer-events', 'none');
                 var road = d3.select('.preset-category-road .preset-list-button');
@@ -107,9 +107,20 @@ iD.ui.intro.line = function(context, reveal) {
             timeout(function() {
                 var grid = d3.select('.subgrid');
                 reveal(grid.node(), t('intro.lines.residential'));
+                grid.selectAll(':not(.preset-highway-residential) .preset-list-button')
+                    .one('click.intro', retryPreset);
                 grid.selectAll('.preset-highway-residential .preset-list-button')
                     .one('click.intro', roadDetails);
-            }, 200);
+            }, 500);
+        }
+
+        // selected wrong road type
+        function retryPreset() {
+            timeout(function() {
+                var preset = d3.select('.entity-editor-pane .preset-list-button');
+                reveal(preset.node(), t('intro.lines.wrong_preset'));
+                preset.one('click.intro', presetCategory);
+            }, 500);
         }
 
         function roadDetails() {

@@ -1,16 +1,10 @@
 iD.modes.Save = function(context) {
     var ui = iD.ui.Commit(context)
         .on('cancel', cancel)
-        .on('fix', fix)
         .on('save', save);
 
     function cancel() {
         context.enter(iD.modes.Browse(context));
-    }
-
-    function fix(d) {
-        context.map().zoomTo(d.entity);
-        context.enter(iD.modes.Select(context, [d.entity.id]));
     }
 
     function save(e) {
@@ -24,7 +18,7 @@ iD.modes.Save = function(context) {
         context.connection().putChangeset(
             context.history().changes(iD.actions.DiscardTags(context.history().difference())),
             e.comment,
-            context.history().imagery_used(),
+            context.history().imageryUsed(),
             function(err, changeset_id) {
                 loading.close();
                 if (err) {
@@ -36,7 +30,7 @@ iD.modes.Save = function(context) {
                     confirm
                         .select('.modal-section.message-text')
                         .append('p')
-                        .text(err.responseText);
+                        .text(err.responseText || t('save.unknown_error_details'));
                 } else {
                     context.flush();
                     success(e, changeset_id);
@@ -45,16 +39,15 @@ iD.modes.Save = function(context) {
     }
 
     function success(e, changeset_id) {
-        context.ui().sidebar.hide(ui);
-
-        ui = iD.ui.Success(context)
-            .changeset({
-                id: changeset_id,
-                comment: e.comment
-            })
-            .on('cancel', cancel);
-
-        context.ui().sidebar.show(ui);
+        context.enter(iD.modes.Browse(context)
+            .sidebar(iD.ui.Success(context)
+                .changeset({
+                    id: changeset_id,
+                    comment: e.comment
+                })
+                .on('cancel', function(ui) {
+                    context.ui().sidebar.hide(ui);
+                })));
     }
 
     var mode = {
@@ -68,22 +61,16 @@ iD.modes.Save = function(context) {
         iD.modes.DragNode(context).behavior];
 
     mode.enter = function() {
-        context.container().selectAll('#bar button.save')
-            .classed('active', true);
-
         behaviors.forEach(function(behavior) {
             context.install(behavior);
         });
 
-        context.connection().authenticate(function(err) {
+        context.connection().authenticate(function() {
             context.ui().sidebar.show(ui);
         });
     };
 
     mode.exit = function() {
-        context.container().selectAll('#bar button.save')
-            .classed('active', false);
-
         behaviors.forEach(function(behavior) {
             context.uninstall(behavior);
         });

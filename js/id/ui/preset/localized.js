@@ -2,7 +2,8 @@ iD.ui.preset.localized = function(field, context) {
 
     var event = d3.dispatch('change'),
         wikipedia = iD.wikipedia(),
-        input, localizedInputs, wikiTitles;
+        input, localizedInputs, wikiTitles,
+        entity;
 
     function i(selection) {
         input = selection.selectAll('.localized-main')
@@ -13,6 +14,13 @@ iD.ui.preset.localized = function(field, context) {
             .attr('id', 'preset-input-' + field.id)
             .attr('class', 'localized-main')
             .attr('placeholder', field.placeholder());
+
+        if (field.id === 'name') {
+            var preset = context.presets().match(entity, context.graph());
+            input.call(d3.combobox().fetcher(
+                iD.util.SuggestNames(preset, iD.data.suggestions)
+            ));
+        }
 
         input
             .on('blur', change)
@@ -48,43 +56,48 @@ iD.ui.preset.localized = function(field, context) {
 
     function change() {
         var t = {};
-        t[field.key] = d3.select(this).property('value') || undefined;
+        t[field.key] = d3.select(this).value() || undefined;
         event.change(t);
     }
 
     function key(lang) { return field.key + ':' + lang; }
 
     function changeLang(d) {
-        var value = d3.select(this).property('value'),
+        var lang = d3.select(this).value(),
             t = {},
             language = _.find(iD.data.wikipedia, function(d) {
-                return d[0].toLowerCase() === value.toLowerCase() ||
-                    d[1].toLowerCase() === value.toLowerCase();
+                return d[0].toLowerCase() === lang.toLowerCase() ||
+                    d[1].toLowerCase() === lang.toLowerCase();
             });
 
-        if (language) value = language[2];
+        if (language) lang = language[2];
 
-        t[key(d.lang)] = '';
-
-        if (d.value) {
-            t[key(value)] = d.value;
-        } else if (wikiTitles && wikiTitles[d.lang]) {
-            t[key(value)] = wikiTitles[d.lang];
+        if (d.lang && d.lang !== lang) {
+            t[key(d.lang)] = undefined;
         }
 
-        event.change(t);
+        var value = d3.select(this.parentNode)
+            .selectAll('.localized-value')
+            .value();
 
-        d.lang = value;
+        if (lang && value) {
+            t[key(lang)] = value;
+        } else if (lang && wikiTitles && wikiTitles[d.lang]) {
+            t[key(lang)] = wikiTitles[d.lang];
+        }
+
+        d.lang = lang;
+        event.change(t);
     }
 
     function changeValue(d) {
+        if (!d.lang) return;
         var t = {};
-        t[key(d.lang)] = d3.select(this).property('value') || '';
+        t[key(d.lang)] = d3.select(this).value() || undefined;
         event.change(t);
-
     }
 
-    function fetcher(value, __, cb) {
+    function fetcher(value, cb) {
         var v = value.toLowerCase();
 
         cb(iD.data.wikipedia.filter(function(d) {
@@ -103,15 +116,32 @@ iD.ui.preset.localized = function(field, context) {
         var innerWrap = wraps.enter()
             .insert('div', ':first-child');
 
-            innerWrap.attr('class', 'entry')
-            .each(function(d) {
+        innerWrap.attr('class', 'entry')
+            .each(function() {
                 var wrap = d3.select(this);
                 var langcombo = d3.combobox().fetcher(fetcher);
 
-                wrap.append('label')
+                var label = wrap.append('label')
                     .attr('class','form-label')
                     .text(t('translate.localized_translation_label'))
                     .attr('for','localized-lang');
+
+                label.append('button')
+                    .attr('class', 'minor remove')
+                    .on('click', function(d){
+                        d3.event.preventDefault();
+                        var t = {};
+                        t[key(d.lang)] = undefined;
+                        event.change(t);
+                        d3.select(this.parentNode.parentNode)
+                            .style('top','0')
+                            .style('max-height','240px')
+                            .transition()
+                            .style('opacity', '0')
+                            .style('max-height','0px')
+                            .remove();
+                    })
+                    .append('span').attr('class', 'icon delete');
 
                 wrap.append('input')
                     .attr('class', 'localized-lang')
@@ -127,43 +157,22 @@ iD.ui.preset.localized = function(field, context) {
                     .attr('type', 'text')
                     .attr('placeholder', t('translate.localized_translation_name'))
                     .attr('class', 'localized-value');
-
-                wrap.append('button')
-                    .attr('class', 'minor button-input-action remove')
-                    .on('click', function(d) {
-                        d3.event.preventDefault();
-                        var t = {};
-                        t[key(d.lang)] = undefined;
-                        event.change(t);
-                        d3.select(this.parentNode)
-                            .style('top','0')
-                            .style('max-height','240px')
-                            .transition()
-                            .style('opacity', '0')
-                            .style('max-height','0px')
-                            .remove();
-                    })
-                    .append('span').attr('class', 'icon delete');
-
             });
 
-        innerWrap.transition()
-            .style('margin-top','0px')
+        innerWrap
+            .style('margin-top', '0px')
             .style('max-height', '0px')
-            .style('padding', '0px')
             .style('opacity', '0')
-            .style('border-width', '0px')
             .transition()
             .duration(200)
-            .style('margin-top','10px')
-            .style('border-width', '1px')
-            .style('padding', '10px')
+            .style('margin-top', '10px')
             .style('max-height', '240px')
             .style('opacity', '1')
-            .each('end', function(d) {
-                d3.select(this).style('max-height', '');
-                d3.select(this).style('overflow', 'visible');
-            });;
+            .each('end', function() {
+                d3.select(this)
+                    .style('max-height', '')
+                    .style('overflow', 'visible');
+            });
 
         wraps.exit()
             .transition()
@@ -173,18 +182,16 @@ iD.ui.preset.localized = function(field, context) {
             .style('top','-10px')
             .remove();
 
-        selection.selectAll('.entry').select('.localized-lang').property('value', function(d) {
-            var lang = _.find(iD.data.wikipedia, function(lang) {
-                return lang[2] === d.lang;
+        var entry = selection.selectAll('.entry');
+
+        entry.select('.localized-lang')
+            .value(function(d) {
+                var lang = _.find(iD.data.wikipedia, function(lang) { return lang[2] === d.lang; });
+                return lang ? lang[1] : d.lang;
             });
-            return lang ? lang[1] : d.lang;
-        });
 
-        selection.selectAll('.entry').select('.localized-value').property('value', function(d) {
-            return d.value;
-        });
-
-
+        entry.select('.localized-value')
+            .value(function(d) { return d.value; });
     }
 
     i.tags = function(tags) {
@@ -200,11 +207,11 @@ iD.ui.preset.localized = function(field, context) {
             }
         }
 
-        input.property('value', tags[field.key] || '');
+        input.value(tags[field.key] || '');
 
         var postfixed = [];
         for (var i in tags) {
-            var m = i.match(new RegExp(field.key + ':([a-z]+)'));
+            var m = i.match(new RegExp(field.key + ':([a-zA-Z_-]+)$'));
             if (m && m[1]) {
                 postfixed.push({ lang: m[1], value: tags[i]});
             }
@@ -214,7 +221,11 @@ iD.ui.preset.localized = function(field, context) {
     };
 
     i.focus = function() {
-        title.node().focus();
+        input.node().focus();
+    };
+
+    i.entity = function(_) {
+        entity = _;
     };
 
     return d3.rebind(i, event, 'on');

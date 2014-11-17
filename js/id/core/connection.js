@@ -3,9 +3,9 @@ iD.Connection = function() {
     var event = d3.dispatch('authenticating', 'authenticated', 'auth', 'loading', 'load', 'loaded'),
         url = 'http://www.openstreetmap.org',
         connection = {},
-        user = {},
         inflight = {},
         loadedTiles = {},
+        tileZoom = 16,
         oauth = osmAuth({
             url: 'http://www.openstreetmap.org',
             oauth_consumer_key: '5A043yRSEugj4DJ5TljuapfnrflWDte8jTOcWLlT',
@@ -22,19 +22,23 @@ iD.Connection = function() {
         off;
 
     connection.changesetURL = function(changesetId) {
-        return url + '/browse/changeset/' + changesetId;
+        return url + '/changeset/' + changesetId;
     };
 
-    connection.changesetsURL = function(extent) {
-        return url + '/browse/changesets?bbox=' + extent.toParam();
+    connection.changesetsURL = function(center, zoom) {
+        var precision = Math.max(0, Math.ceil(Math.log(zoom) / Math.LN2));
+        return url + '/history#map=' +
+            Math.floor(zoom) + '/' +
+            center[1].toFixed(precision) + '/' +
+            center[0].toFixed(precision);
     };
 
     connection.entityURL = function(entity) {
-        return url + '/browse/' + entity.type + '/' + entity.osmId();
+        return url + '/' + entity.type + '/' + entity.osmId();
     };
 
     connection.userURL = function(username) {
-        return url + "/user/" + username;
+        return url + '/user/' + username;
     };
 
     connection.loadFromURL = function(url, callback) {
@@ -52,7 +56,7 @@ iD.Connection = function() {
             url + '/api/0.6/' + type + '/' + osmID + (type !== 'node' ? '/full' : ''),
             function(err, entities) {
                 event.load(err, {data: entities});
-                if (callback) callback(err, entities && entities[id]);
+                if (callback) callback(err, entities && _.find(entities, function(e) { return e.id === id; }));
             });
     };
 
@@ -68,7 +72,7 @@ iD.Connection = function() {
         var elems = obj.getElementsByTagName(ndStr),
             nodes = new Array(elems.length);
         for (var i = 0, l = elems.length; i < l; i++) {
-            nodes[i] = 'n' + elems[i].attributes.ref.nodeValue;
+            nodes[i] = 'n' + elems[i].attributes.ref.value;
         }
         return nodes;
     }
@@ -78,7 +82,7 @@ iD.Connection = function() {
             tags = {};
         for (var i = 0, l = elems.length; i < l; i++) {
             var attrs = elems[i].attributes;
-            tags[attrs.k.nodeValue] = attrs.v.nodeValue;
+            tags[attrs.k.value] = attrs.v.value;
         }
         return tags;
     }
@@ -89,9 +93,9 @@ iD.Connection = function() {
         for (var i = 0, l = elems.length; i < l; i++) {
             var attrs = elems[i].attributes;
             members[i] = {
-                id: attrs.type.nodeValue[0] + attrs.ref.nodeValue,
-                type: attrs.type.nodeValue,
-                role: attrs.role.nodeValue
+                id: attrs.type.value[0] + attrs.ref.value,
+                type: attrs.type.value,
+                role: attrs.role.value
             };
         }
         return members;
@@ -101,10 +105,10 @@ iD.Connection = function() {
         node: function nodeData(obj) {
             var attrs = obj.attributes;
             return new iD.Node({
-                id: iD.Entity.id.fromOSM(nodeStr, attrs.id.nodeValue),
-                loc: [parseFloat(attrs.lon.nodeValue), parseFloat(attrs.lat.nodeValue)],
-                version: attrs.version.nodeValue,
-                user: attrs.user && attrs.user.nodeValue,
+                id: iD.Entity.id.fromOSM(nodeStr, attrs.id.value),
+                loc: [parseFloat(attrs.lon.value), parseFloat(attrs.lat.value)],
+                version: attrs.version.value,
+                user: attrs.user && attrs.user.value,
                 tags: getTags(obj)
             });
         },
@@ -112,9 +116,9 @@ iD.Connection = function() {
         way: function wayData(obj) {
             var attrs = obj.attributes;
             return new iD.Way({
-                id: iD.Entity.id.fromOSM(wayStr, attrs.id.nodeValue),
-                version: attrs.version.nodeValue,
-                user: attrs.user && attrs.user.nodeValue,
+                id: iD.Entity.id.fromOSM(wayStr, attrs.id.value),
+                version: attrs.version.value,
+                user: attrs.user && attrs.user.value,
                 tags: getTags(obj),
                 nodes: getNodes(obj)
             });
@@ -123,9 +127,9 @@ iD.Connection = function() {
         relation: function relationData(obj) {
             var attrs = obj.attributes;
             return new iD.Relation({
-                id: iD.Entity.id.fromOSM(relationStr, attrs.id.nodeValue),
-                version: attrs.version.nodeValue,
-                user: attrs.user && attrs.user.nodeValue,
+                id: iD.Entity.id.fromOSM(relationStr, attrs.id.value),
+                version: attrs.version.value,
+                user: attrs.user && attrs.user.value,
                 tags: getTags(obj),
                 members: getMembers(obj)
             });
@@ -137,15 +141,13 @@ iD.Connection = function() {
 
         var root = dom.childNodes[0],
             children = root.childNodes,
-            entities = {};
+            entities = [];
 
-        var i, o, l;
-        for (i = 0, l = children.length; i < l; i++) {
+        for (var i = 0, l = children.length; i < l; i++) {
             var child = children[i],
                 parser = parsers[child.nodeName];
             if (parser) {
-                o = parser(child);
-                entities[o.id] = o;
+                entities.push(parser(child));
             }
         }
 
@@ -173,7 +175,7 @@ iD.Connection = function() {
 
     // Generate [osmChange](http://wiki.openstreetmap.org/wiki/OsmChange)
     // XML. Returns a string.
-    connection.osmChangeJXON = function(userid, changeset_id, changes) {
+    connection.osmChangeJXON = function(changeset_id, changes) {
         function nest(x, order) {
             var groups = {};
             for (var i = 0; i < x.length; i++) {
@@ -203,9 +205,9 @@ iD.Connection = function() {
         };
     };
 
-    connection.changesetTags = function(comment, imagery_used) {
+    connection.changesetTags = function(comment, imageryUsed) {
         var tags = {
-            imagery_used: imagery_used.join(';'),
+            imagery_used: imageryUsed.join(';').substr(0, 255),
             created_by: 'iD ' + iD.version
         };
 
@@ -216,19 +218,19 @@ iD.Connection = function() {
         return tags;
     };
 
-    connection.putChangeset = function(changes, comment, imagery_used, callback) {
+    connection.putChangeset = function(changes, comment, imageryUsed, callback) {
         oauth.xhr({
                 method: 'PUT',
                 path: '/api/0.6/changeset/create',
                 options: { header: { 'Content-Type': 'text/xml' } },
-                content: JXON.stringify(connection.changesetJXON(connection.changesetTags(comment, imagery_used)))
+                content: JXON.stringify(connection.changesetJXON(connection.changesetTags(comment, imageryUsed)))
             }, function(err, changeset_id) {
                 if (err) return callback(err);
                 oauth.xhr({
                     method: 'POST',
                     path: '/api/0.6/changeset/' + changeset_id + '/upload',
                     options: { header: { 'Content-Type': 'text/xml' } },
-                    content: JXON.stringify(connection.osmChangeJXON(user.id, changeset_id, changes))
+                    content: JXON.stringify(connection.osmChangeJXON(changeset_id, changes))
                 }, function(err) {
                     if (err) return callback(err);
                     oauth.xhr({
@@ -241,21 +243,34 @@ iD.Connection = function() {
             });
     };
 
+    var userDetails;
+
     connection.userDetails = function(callback) {
+        if (userDetails) {
+            callback(undefined, userDetails);
+            return;
+        }
+
         function done(err, user_details) {
             if (err) return callback(err);
+
             var u = user_details.getElementsByTagName('user')[0],
                 img = u.getElementsByTagName('img'),
                 image_url = '';
+
             if (img && img[0] && img[0].getAttribute('href')) {
                 image_url = img[0].getAttribute('href');
             }
-            callback(undefined, connection.user({
-                display_name: u.attributes.display_name.nodeValue,
+
+            userDetails = {
+                display_name: u.attributes.display_name.value,
                 image_url: image_url,
-                id: u.attributes.id.nodeValue
-            }).user());
+                id: u.attributes.id.value
+            };
+
+            callback(undefined, userDetails);
         }
+
         oauth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, done);
     };
 
@@ -271,19 +286,25 @@ iD.Connection = function() {
 
     function abortRequest(i) { i.abort(); }
 
+    connection.tileZoom = function(_) {
+        if (!arguments.length) return tileZoom;
+        tileZoom = _;
+        return connection;
+    };
+
     connection.loadTiles = function(projection, dimensions) {
 
         if (off) return;
 
         var s = projection.scale() * 2 * Math.PI,
             z = Math.max(Math.log(s) / Math.log(2) - 8, 0),
-            ts = 256 * Math.pow(2, z - 16),
+            ts = 256 * Math.pow(2, z - tileZoom),
             origin = [
                 s / 2 - projection.translate()[0],
                 s / 2 - projection.translate()[1]];
 
         var tiles = d3.geo.tile()
-            .scaleExtent([16, 16])
+            .scaleExtent([tileZoom, tileZoom])
             .scale(s)
             .size(dimensions)
             .translate(projection.translate())()
@@ -296,7 +317,7 @@ iD.Connection = function() {
                     extent: iD.geo.Extent(
                         projection.invert([x, y + ts]),
                         projection.invert([x + ts, y]))
-                }
+                };
             });
 
         function bboxUrl(tile) {
@@ -346,12 +367,6 @@ iD.Connection = function() {
 
     connection.toggle = function(_) {
         off = !_;
-        return connection;
-    };
-
-    connection.user = function(_) {
-        if (!arguments.length) return user;
-        user = _;
         return connection;
     };
 

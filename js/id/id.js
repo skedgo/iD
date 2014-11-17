@@ -5,23 +5,46 @@ window.iD = function () {
     var context = {},
         storage;
 
-    // https://github.com/systemed/iD/issues/772
+    // https://github.com/openstreetmap/iD/issues/772
     // http://mathiasbynens.be/notes/localstorage-pattern#comment-9
     try { storage = localStorage; } catch (e) {}
-    storage = storage || {};
+    storage = storage || (function() {
+        var s = {};
+        return {
+            getItem: function(k) { return s[k]; },
+            setItem: function(k, v) { s[k] = v; },
+            removeItem: function(k) { delete s[k]; }
+        };
+    })();
 
     context.storage = function(k, v) {
-        if (arguments.length === 1) return storage[k];
-        else if (v === null) delete storage[k];
-        else storage[k] = v;
+        try {
+            if (arguments.length === 1) return storage.getItem(k);
+            else if (v === null) storage.removeItem(k);
+            else storage.setItem(k, v);
+        } catch(e) {
+            // localstorage quota exceeded
+            /* jshint devel:true */
+            if (typeof console !== 'undefined') console.error('localStorage quota exceeded');
+            /* jshint devel:false */
+        }
+    };
+
+    /* Accessor for setting minimum zoom for editing features. */
+
+    var minEditableZoom = 16;
+    context.minEditableZoom = function(_) {
+        if (!arguments.length) return minEditableZoom;
+        minEditableZoom = _;
+        connection.tileZoom(_);
+        return context;
     };
 
     var history = iD.History(context),
-        dispatch = d3.dispatch('enter', 'exit', 'toggleFullscreen'),
+        dispatch = d3.dispatch('enter', 'exit'),
         mode,
         container,
         ui = iD.ui(context),
-        map = iD.Map(context),
         connection = iD.Connection(),
         locale = iD.detect().locale,
         localePath;
@@ -62,24 +85,49 @@ window.iD = function () {
     context.ui = function() { return ui; };
     context.connection = function() { return connection; };
     context.history = function() { return history; };
-    context.map = function() { return map; };
 
     /* History */
     context.graph = history.graph;
-    context.perform = history.perform;
-    context.replace = history.replace;
-    context.pop = history.pop;
-    context.undo = history.undo;
-    context.redo = history.redo;
     context.changes = history.changes;
     context.intersects = history.intersects;
 
-    context.flush = function() {
-        history.reset();
-        connection.flush();
-        map.redraw();
+    var inIntro = false;
+
+    context.inIntro = function(_) {
+        if (!arguments.length) return inIntro;
+        inIntro = _;
         return context;
     };
+
+    context.save = function() {
+        if (inIntro) return;
+        history.save();
+        if (history.hasChanges()) return t('save.unsaved_changes');
+    };
+
+    context.flush = function() {
+        connection.flush();
+        features.reset();
+        history.reset();
+        return context;
+    };
+
+    // Debounce save, since it's a synchronous localStorage write,
+    // and history changes can happen frequently (e.g. when dragging).
+    var debouncedSave = _.debounce(context.save, 350);
+    function withDebouncedSave(fn) {
+        return function() {
+            var result = fn.apply(history, arguments);
+            debouncedSave();
+            return result;
+        };
+    }
+
+    context.perform = withDebouncedSave(history.perform);
+    context.replace = withDebouncedSave(history.replace);
+    context.pop = withDebouncedSave(history.pop);
+    context.undo = withDebouncedSave(history.undo);
+    context.redo = withDebouncedSave(history.redo);
 
     /* Graph */
     context.hasEntity = function(id) {
@@ -122,6 +170,34 @@ window.iD = function () {
         }
     };
 
+    context.loadEntity = function(id, zoomTo) {
+        if (zoomTo !== false) {
+            connection.loadEntity(id, function(error, entity) {
+                if (entity) {
+                    map.zoomTo(entity);
+                }
+            });
+        }
+
+        map.on('drawn.loadEntity', function() {
+            if (!context.hasEntity(id)) return;
+            map.on('drawn.loadEntity', null);
+            context.on('enter.loadEntity', null);
+            context.enter(iD.modes.Select(context, [id]));
+        });
+
+        context.on('enter.loadEntity', function() {
+            if (mode.id !== 'browse') {
+                map.on('drawn.loadEntity', null);
+                context.on('enter.loadEntity', null);
+            }
+        });
+    };
+
+    context.editable = function() {
+        return map.editable();
+    };
+
     /* Behaviors */
     context.install = function(behavior) {
         context.surface().call(behavior);
@@ -131,38 +207,53 @@ window.iD = function () {
         context.surface().call(behavior.off);
     };
 
+    /* Projection */
+    context.projection = iD.geo.RawMercator();
+
+    /* Background */
+    var background = iD.Background(context);
+    context.background = function() { return background; };
+
+    /* Features */
+    var features = iD.Features(context);
+    context.features = function() { return features; };
+    context.hasHiddenConnections = function(id) {
+        var graph = history.graph(),
+            entity = graph.entity(id);
+        return features.hasHiddenConnections(entity, graph);
+    };
+
     /* Map */
+    var map = iD.Map(context);
+    context.map = function() { return map; };
     context.layers = function() { return map.layers; };
-    context.background = function() { return map.layers[0]; };
     context.surface = function() { return map.surface; };
     context.mouse = map.mouse;
-    context.projection = map.projection;
     context.extent = map.extent;
-    context.redraw = map.redraw;
     context.pan = map.pan;
     context.zoomIn = map.zoomIn;
     context.zoomOut = map.zoomOut;
 
-    /* Background */
-    var backgroundSources = iD.data.imagery.map(function(source) {
-        if (source.sourcetag === 'Bing') {
-            return iD.BackgroundSource.Bing(source, context.background().dispatch);
-        } else {
-            return iD.BackgroundSource.template(source);
-        }
-    });
-    backgroundSources.push(iD.BackgroundSource.Custom);
-
-    context.backgroundSources = function() {
-        return backgroundSources;
+    context.surfaceRect = function() {
+        // Work around a bug in Firefox.
+        //   http://stackoverflow.com/questions/18153989/
+        //   https://bugzilla.mozilla.org/show_bug.cgi?id=530985
+        return context.surface().node().parentNode.getBoundingClientRect();
     };
 
     /* Presets */
-    var presets = iD.presets()
-        .load(iD.data.presets);
+    var presets = iD.presets();
 
-    context.presets = function() {
-        return presets;
+    context.presets = function(_) {
+        if (!arguments.length) return presets;
+        presets.load(_);
+        iD.areaKeys = presets.areaKeys();
+        return context;
+    };
+
+    context.imagery = function(_) {
+        background.load(_);
+        return context;
     };
 
     context.container = function(_) {
@@ -172,33 +263,13 @@ window.iD = function () {
         return context;
     };
 
-    var q = iD.util.stringQs(location.hash.substring(1)),
-        detected = false,
-        background = q.background || q.layer;
-
-    if (background && background.indexOf('custom:') === 0) {
-        context.layers()[0]
-           .source(iD.BackgroundSource.template({
-                template: background.replace(/^custom:/, ''),
-                name: 'Custom'
-            }));
-        detected = true;
-    } else if (background) {
-        context.layers()[0]
-           .source(_.find(backgroundSources, function(l) {
-               if (l.data.sourcetag === background) {
-                   detected = true;
-                   return true;
-               }
-           }));
-    }
-
-    if (!detected) {
-        context.background()
-            .source(_.find(backgroundSources, function(l) {
-                return l.data.name === 'Bing aerial imagery';
-            }));
-    }
+    /* Taginfo */
+    var taginfo;
+    context.taginfo = function(_) {
+        if (!arguments.length) return taginfo;
+        taginfo = _;
+        return context;
+    };
 
     var embed = false;
     context.embed = function(_) {
@@ -214,24 +285,28 @@ window.iD = function () {
         return context;
     };
 
-    context.imagePath = function(_) {
-        return assetPath + 'img/' + _;
+    var assetMap = {};
+    context.assetMap = function(_) {
+        if (!arguments.length) return assetMap;
+        assetMap = _;
+        return context;
     };
 
-    context.toggleFullscreen = function() {
-        dispatch.toggleFullscreen();
+    context.imagePath = function(_) {
+        var asset = 'img/' + _;
+        return assetMap[asset] || assetPath + asset;
     };
 
     return d3.rebind(context, dispatch, 'on');
 };
 
-iD.version = '1.1.0beta1';
+iD.version = '1.6.1';
 
 (function() {
     var detected = {};
 
     var ua = navigator.userAgent,
-        msie = new RegExp("MSIE ([0-9]{1,}[\\.0-9]{0,})");
+        msie = new RegExp('MSIE ([0-9]{1,}[\\.0-9]{0,})');
 
     if (msie.exec(ua) !== null) {
         var rv = parseFloat(RegExp.$1);

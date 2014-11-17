@@ -13,51 +13,40 @@ iD.ui.Success = function(context) {
             .attr('class', 'fr')
             .append('span')
             .attr('class', 'icon close')
-            .on('click', event.cancel);
+            .on('click', function() { event.cancel(success); });
 
         header.append('h3')
-            .text(t('just_edited'));
+            .text(t('success.just_edited'));
 
         var body = selection.append('div')
-            .attr('class', 'body');
+            .attr('class', 'body save-success fillL');
 
-        var links = body.append('div')
-            .attr('class', 'modal-actions cf');
+        body.append('p')
+            .html(t('success.help_html'));
 
-        links.append('a')
-            .attr('class', 'col4 osm')
+        var changesetURL = context.connection().changesetURL(changeset.id);
+
+        body.append('a')
+            .attr('class', 'button col12 osm')
             .attr('target', '_blank')
-            .attr('href', function() {
-                return context.connection().changesetURL(changeset.id);
-            })
-            .text(t('view_on_osm'));
+            .attr('href', changesetURL)
+            .text(t('success.view_on_osm'));
 
-        links.append('a')
-            .attr('class', 'col4 twitter')
+        var sharing = {
+            facebook: 'https://facebook.com/sharer/sharer.php?u=' + encodeURIComponent(changesetURL),
+            twitter: 'https://twitter.com/intent/tweet?source=webclient&text=' + encodeURIComponent(message),
+            google: 'https://plus.google.com/share?url=' + encodeURIComponent(changesetURL)
+        };
+
+        body.selectAll('.button.social')
+            .data(d3.entries(sharing))
+            .enter().append('a')
+            .attr('class', function(d) { return 'button social col4 ' + d.key; })
             .attr('target', '_blank')
-            .attr('href', function() {
-                return 'https://twitter.com/intent/tweet?source=webclient&text=' +
-                    encodeURIComponent(message);
-            })
-            .text(t('success.tweet'));
-
-        links.append('a')
-            .attr('class', 'col4 facebook')
-            .attr('target', '_blank')
-            .attr('href', function() {
-                return 'https://facebook.com/sharer/sharer.php?u=' +
-                    encodeURIComponent(message);
-            })
-            .text(t('success.facebook'));
-
-        var section = body.append('div')
-            .attr('class', 'modal-section cf');
-
-        section.append('button')
-            .attr('class', 'action col2')
-            .on('click', event.cancel)
-            .text(t('success.okay'))
-            .node().focus();
+            .attr('href', function(d) { return d.value; })
+            .call(bootstrap.tooltip()
+                .title(function(d) { return t('success.' + d.key); })
+                .placement('bottom'));
     }
 
     success.changeset = function(_) {

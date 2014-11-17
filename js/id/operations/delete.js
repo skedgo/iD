@@ -3,11 +3,11 @@ iD.operations.Delete = function(selectedIDs, context) {
 
     var operation = function() {
         var annotation,
-            mode;
+            nextSelectedID;
 
         if (selectedIDs.length > 1) {
             annotation = t('operations.delete.annotation.multiple', {n: selectedIDs.length});
-            mode = iD.modes.Browse(context);
+
         } else {
             var id = selectedIDs[0],
                 entity = context.entity(id),
@@ -16,7 +16,6 @@ iD.operations.Delete = function(selectedIDs, context) {
                 parent = parents[0];
 
             annotation = t('operations.delete.annotation.' + geometry);
-            mode = iD.modes.Browse(context);
 
             // Select the next closest node in the way.
             if (geometry === 'vertex' && parents.length === 1 && parent.nodes.length > 2) {
@@ -28,21 +27,24 @@ iD.operations.Delete = function(selectedIDs, context) {
                 } else if (i === nodes.length - 1) {
                     i--;
                 } else {
-                    var a = iD.geo.dist(entity.loc, context.entity(nodes[i - 1]).loc),
-                        b = iD.geo.dist(entity.loc, context.entity(nodes[i + 1]).loc);
+                    var a = iD.geo.sphericalDistance(entity.loc, context.entity(nodes[i - 1]).loc),
+                        b = iD.geo.sphericalDistance(entity.loc, context.entity(nodes[i + 1]).loc);
                     i = a < b ? i - 1 : i + 1;
                 }
 
-                mode = iD.modes.Select(context, [nodes[i]]);
+                nextSelectedID = nodes[i];
             }
+        }
+
+        if (nextSelectedID && context.hasEntity(nextSelectedID)) {
+            context.enter(iD.modes.Select(context, [nextSelectedID]));
+        } else {
+            context.enter(iD.modes.Browse(context));
         }
 
         context.perform(
             action,
             annotation);
-
-        context.enter(mode);
-
     };
 
     operation.available = function() {
@@ -50,7 +52,11 @@ iD.operations.Delete = function(selectedIDs, context) {
     };
 
     operation.disabled = function() {
-        return action.disabled(context.graph());
+        var reason;
+        if (_.any(selectedIDs, context.hasHiddenConnections)) {
+            reason = 'connected_to_hidden';
+        }
+        return action.disabled(context.graph()) || reason;
     };
 
     operation.tooltip = function() {
@@ -60,8 +66,8 @@ iD.operations.Delete = function(selectedIDs, context) {
             t('operations.delete.description');
     };
 
-    operation.id = "delete";
-    operation.keys = [iD.ui.cmd('⌫'), iD.ui.cmd('⌦')];
+    operation.id = 'delete';
+    operation.keys = [iD.ui.cmd('⌘⌫'), iD.ui.cmd('⌘⌦')];
     operation.title = t('operations.delete.title');
 
     return operation;

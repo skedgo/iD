@@ -19,7 +19,7 @@ iD.ui.Zoom = function(context) {
             .attr('class', function(d) { return d.id; })
             .on('click.editor', function(d) { d.action(); })
             .call(bootstrap.tooltip()
-                .placement('right')
+                .placement('left')
                 .html(true)
                 .title(function(d) {
                     return iD.ui.tooltipHtml(d.title, d.key);
@@ -28,11 +28,16 @@ iD.ui.Zoom = function(context) {
         button.append('span')
             .attr('class', function(d) { return d.id + ' icon'; });
 
-        var keybinding = d3.keybinding('zoom')
-            .on('+', function() { context.zoomIn(); })
-            .on('-', function() { context.zoomOut(); })
-            .on('⇧=', function() { context.zoomIn(); })
-            .on('dash', function() { context.zoomOut(); });
+        var keybinding = d3.keybinding('zoom');
+
+        _.each(['=','ffequals','plus','ffplus'], function(key) {
+            keybinding.on(key, function() { context.zoomIn(); });
+            keybinding.on('⇧' + key, function() { context.zoomIn(); });
+        });
+        _.each(['-','ffminus','_','dash'], function(key) {
+            keybinding.on(key, function() { context.zoomOut(); });
+            keybinding.on('⇧' + key, function() { context.zoomOut(); });
+        });
 
         d3.select(document)
             .call(keybinding);

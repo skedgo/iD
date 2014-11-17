@@ -5,6 +5,8 @@ iD.Entity = function(attrs) {
     // Create the appropriate subtype.
     if (attrs && attrs.type) {
         return iD.Entity[attrs.type].apply(this, arguments);
+    } else if (attrs && attrs.id) {
+        return iD.Entity[iD.Entity.id.type(attrs.id)].apply(this, arguments);
     }
 
     // Initialize a generic Entity (used only in tests).
@@ -31,12 +33,8 @@ iD.Entity.id.type = function(id) {
 
 // A function suitable for use as the second argument to d3.selection#data().
 iD.Entity.key = function(entity) {
-    return entity.id + ',' + entity.v;
+    return entity.id + 'v' + (entity.v || 0);
 };
-
-iD.Entity.areaPath = d3.geo.path()
-    .projection(d3.geo.mercator()
-        .scale(12016420.517592335));
 
 iD.Entity.prototype = {
     tags: {},
@@ -104,23 +102,18 @@ iD.Entity.prototype = {
             resolver.parentRelations(this).length > 0;
     },
 
-    // Returns the (possibly negative) area of the entity in square pixels at an
-    // arbitrary unspecified zoom level -- so basically, only useful for relative
-    // comparisons.
-    area: function(resolver) {
-        return resolver.transient(this, 'area', function() {
-            return iD.Entity.areaPath.area(this.asGeoJSON(resolver, true));
+    hasInterestingTags: function() {
+        return _.keys(this.tags).some(function(key) {
+            return key !== 'attribution' &&
+                key !== 'created_by' &&
+                key !== 'source' &&
+                key !== 'odbl' &&
+                key.indexOf('tiger:') !== 0;
         });
     },
 
-    hasInterestingTags: function() {
-        return _.keys(this.tags).some(function(key) {
-            return key != 'attribution' &&
-                key != 'created_by' &&
-                key != 'source' &&
-                key != 'odbl' &&
-                key.indexOf('tiger:') !== 0;
-        });
+    isHighwayIntersection: function() {
+        return false;
     },
 
     deprecatedTags: function() {
@@ -130,8 +123,8 @@ iD.Entity.prototype = {
         iD.data.deprecated.forEach(function(d) {
             var match = _.pairs(d.old)[0];
             tags.forEach(function(t) {
-                if (t[0] == match[0] &&
-                    (t[1] == match[1] || match[1] == '*')) {
+                if (t[0] === match[0] &&
+                    (t[1] === match[1] || match[1] === '*')) {
                     deprecated[t[0]] = t[1];
                 }
             });

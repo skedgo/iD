@@ -10,6 +10,21 @@ iD.util.entitySelector = function(ids) {
     return ids.length ? '.' + ids.join(',.') : 'nothing';
 };
 
+iD.util.entityOrMemberSelector = function(ids, graph) {
+    var s = iD.util.entitySelector(ids);
+
+    ids.forEach(function(id) {
+        var entity = graph.hasEntity(id);
+        if (entity && entity.type === 'relation') {
+            entity.members.forEach(function(member) {
+                s += ',.' + member.id;
+            });
+        }
+    });
+
+    return s;
+};
+
 iD.util.displayName = function(entity) {
     var localeName = 'name:' + iD.detect().locale.toLowerCase().split('-')[0];
     return entity.tags[localeName] || entity.tags.name || entity.tags.ref;
@@ -26,7 +41,11 @@ iD.util.stringQs = function(str) {
 };
 
 iD.util.qsString = function(obj, noencode) {
-    function softEncode(s) { return s.replace('&', '%26'); }
+    function softEncode(s) {
+      // encode everything except special characters used in certain hash parameters:
+      // "/" in map states, ":", ",", {" and "}" in background
+      return encodeURIComponent(s).replace(/(%2F|%3A|%2C|%7B|%7D)/g, decodeURIComponent);
+    }
     return Object.keys(obj).sort().map(function(key) {
         return encodeURIComponent(key) + '=' + (
             noencode ? softEncode(obj[key]) : encodeURIComponent(obj[key]));
@@ -62,9 +81,18 @@ iD.util.prefixCSSProperty = function(property) {
 
     while (++i < n)
         if (prefixes[i] + property in s)
-            return '-' + prefixes[i].toLowerCase() + '-' + property.toLowerCase();
+            return '-' + prefixes[i].toLowerCase() + property.replace(/([A-Z])/g, '-$1').toLowerCase();
 
     return false;
+};
+
+
+iD.util.setTransform = function(el, x, y, scale) {
+    var prop = iD.util.transformProperty = iD.util.transformProperty || iD.util.prefixCSSProperty('Transform'),
+        translate = iD.detect().opera ?
+            'translate('   + x + 'px,' + y + 'px)' :
+            'translate3d(' + x + 'px,' + y + 'px,0)';
+    return el.style(prop, translate + (scale ? ' scale(' + scale + ')' : ''));
 };
 
 iD.util.getStyle = function(selector) {
@@ -87,7 +115,7 @@ iD.util.editDistance = function(a, b) {
     for (var j = 0; j <= a.length; j++) { matrix[0][j] = j; }
     for (i = 1; i <= b.length; i++) {
         for (j = 1; j <= a.length; j++) {
-            if (b.charAt(i-1) == a.charAt(j-1)) {
+            if (b.charAt(i-1) === a.charAt(j-1)) {
                 matrix[i][j] = matrix[i-1][j-1];
             } else {
                 matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, // substitution
@@ -115,6 +143,7 @@ iD.util.fastMouse = function(container) {
     };
 };
 
+/* jshint -W103 */
 iD.util.getPrototypeOf = Object.getPrototypeOf || function(obj) { return obj.__proto__; };
 
 iD.util.asyncMap = function(inputs, func, callback) {
@@ -130,4 +159,11 @@ iD.util.asyncMap = function(inputs, func, callback) {
             if (!remaining) callback(errors, results);
         });
     });
+};
+
+// wraps an index to an interval [0..length-1]
+iD.util.wrap = function(index, length) {
+    if (index < 0)
+        index += Math.ceil(-index/length)*length;
+    return index % length;
 };

@@ -8,14 +8,14 @@ so that you can write code that fits in perfectly.
 We'd love to hear what you think about iD, about any specific problems or
 concerns you have. Here's a quick list of things to consider:
 
-Please [search for your issue before filing it: many bugs and improvements have already been reported](https://github.com/systemed/iD/issues/search?q=)
+Please [search for your issue before filing it: many bugs and improvements have already been reported](https://github.com/search?l=&q=repo%3Aopenstreetmap%2FiD&type=Issues)
 
 To report a bug:
 
 * Write specifically what browser (type and version, like Firefox 22), OS, and browser extensions you have installed
 * Write steps to replicate the error: when did it happen? What did you expect to happen? What happened instead?
 * Please keep bug reports professional and straightforward: trust us, we share your dismay at software breaking.
-* If you can, [enable web developer extensions](http://macwright.org/enable-web-developer-extensions/) and report the
+* If you can, [enable web developer extensions](http://debugbrowser.com/) and report the
   Javascript error message.
 
 When in doubt, be over-descriptive of the bug and how you discovered it.
@@ -64,7 +64,7 @@ project** button near the bottom of the project page. You can edit your
 getting too many notifications.
 
 Translations are licensed under
-[WTFPL](https://raw.github.com/systemed/iD/master/LICENSE), the same license
+[WTFPL](https://raw.github.com/openstreetmap/iD/master/LICENSE), the same license
 as iD.
 
 **Why are there so many duplicate "Type" translations?** There are multiple
@@ -87,9 +87,8 @@ iD translates strings with a `t` function - `t('foo.bar')` translate the key
 `foo.bar` into the current language. If you introduce new translatable strings
 to iD, only display them in the interface through the `t()` function.
 
-Then, add the new string to `data/core.yaml` or `data/presets.yaml` (depending
-on whether it pertains to core code or presets). The translation system,
-Transiflex, will automatically detect the change.
+Then, add the new string to `data/core.yaml`. The translation system, Transifex,
+will automatically detect the change.
 
 Use `make` to build the translations with the local changes.
 `make translate` can be used to pull the latest translations from Transifex.
@@ -97,8 +96,9 @@ Use `make` to build the translations with the local changes.
 ## Contributing Documentation
 
 Documentation is maintained as a series of [Markdown](http://daringfireball.net/projects/markdown/)
-documents in the `data/doc/` path. The first line of each page of documentation
-should be of the form
+documents in [core.yaml](/data/core.yaml). The documentation 
+is in the `help` section (currently starting at line 258). The first line 
+of each new section of documentation should be of the form
 
     # GPS
 
@@ -106,8 +106,13 @@ This will be used for navigation and as its title in iD. Documentation is
 shown in alphabetical order, so most documentation is prefixed with `02-` and
 so on in order to keep it in a certain order.
 
-To add a new page of documentation, simply create a new Markdown file in
-`data/doc` in the same format as the rest.
+To add a new piece of documentation, simply add to [core.yaml](/data/core.yaml) in the same format as the rest.
+
+## Adding or Refining Presets
+
+Presets save time for iD users by automatically showing them the tags they are 
+likely to add for a given feature. They are stored in `data/presets/presets`. If 
+you're going to update the presets, [review the Presets README](/data/presets/README.md).
 
 ## Javascript
 
@@ -151,10 +156,11 @@ feel free to use newer features wisely.
 Test your code and make sure it passes. Our testing harness requires [node.js](http://nodejs.org/)
 and a few modules:
 
-1. [Install node.js](http://nodejs.org/) - 'Install' will download a package for your OS
-2. Go to the directory where you have checked out `iD`
-3. Run `npm install`
-4. Run `npm test` to see whether your tests pass or fail.
+1. [Install node.js](http://nodejs.org/) version 0.10.0 or later - 'Install' will download a package for your OS
+2. Install [PhantomJS](http://phantomjs.org/) version 1.9.1 or later - This can be done via `npm install phantomjs` or homebrew
+3. Go to the directory where you have checked out `iD`
+4. Run `npm install`
+5. Run `npm test` to see whether your tests pass or fail.
 
 ## Building / Installing
 
@@ -188,4 +194,4 @@ So let's say you've changed `js/ui/confirm.js`.
 1. Run `jshint js/id` to make sure your code is clean
 2. Run tests with `npm test`
 3. Commit your changes with an informative commit message
-4. [Submit a pull request](https://help.github.com/articles/using-pull-requests) to the `systemed/iD` project.
+4. [Submit a pull request](https://help.github.com/articles/using-pull-requests) to the `openstreetmap/iD` project.

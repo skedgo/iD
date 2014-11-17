@@ -21,9 +21,9 @@ iD.ui.Geolocate = function(map) {
             .attr('title', t('geolocate.title'))
             .on('click', click)
             .call(bootstrap.tooltip()
-                .placement('right'));
+                .placement('left'));
 
          button.append('span')
-             .attr('class', 'icon geolocate');
+             .attr('class', 'icon geolocate light');
     };
 };

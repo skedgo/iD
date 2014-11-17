@@ -1,4 +1,6 @@
 iD.ui.FeatureList = function(context) {
+    var geocodeResults;
+
     function featureList(selection) {
         var header = selection.append('div')
             .attr('class', 'header fillL cf');
@@ -6,13 +8,17 @@ iD.ui.FeatureList = function(context) {
         header.append('h3')
             .text(t('inspector.feature_list'));
 
-        function keyup() {
-            var q = search.property('value');
-            if (d3.event.keyCode === 13 && q.length) {
-                click(list.selectAll('.feature-list-item:first-child').datum());
-            } else {
-                drawList();
+        function keypress() {
+            var q = search.property('value'),
+                items = list.selectAll('.feature-list-item');
+            if (d3.event.keyCode === 13 && q.length && items.size()) {
+                click(items.datum());
             }
+        }
+
+        function inputevent() {
+            geocodeResults = undefined;
+            drawList();
         }
 
         var searchWrap = selection.append('div')
@@ -21,7 +27,8 @@ iD.ui.FeatureList = function(context) {
         var search = searchWrap.append('input')
             .attr('placeholder', t('inspector.search'))
             .attr('type', 'search')
-            .on('keyup', keyup);
+            .on('keypress', keypress)
+            .on('input', inputevent);
 
         searchWrap.append('span')
             .attr('class', 'icon search');
@@ -30,74 +37,157 @@ iD.ui.FeatureList = function(context) {
             .attr('class', 'inspector-body');
 
         var list = listWrap.append('div')
-            .attr('class', 'feature-list fillL cf');
-
-        drawList();
-
-        context.history()
-            .on('change.feature-list', drawList);
+            .attr('class', 'feature-list cf');
 
         context.map()
-            .on('drawn', drawList);
+            .on('drawn.feature-list', mapDrawn);
+
+        function mapDrawn(e) {
+            if (e.full) {
+                drawList();
+            }
+        }
 
         function features() {
-            var result = [],
+            var entities = {},
+                result = [],
                 graph = context.graph(),
                 q = search.property('value').toLowerCase();
 
-            if (!context.map().editable()) {
-                return result;
-            }
+            if (!q) return result;
 
-            var entities = context.intersects(context.extent());
-            for (var i = 0; i < entities.length; i++) {
-                var entity = entities[i];
+            var idMatch = q.match(/^([nwr])([0-9]+)$/);
 
-                if (entity.geometry(graph) === 'vertex')
-                    continue;
-
-                var preset = context.presets().match(entity, context.graph()),
-                    name = iD.util.displayName(entity) || '';
-
-                if (q && name.toLowerCase().indexOf(q) === -1 &&
-                    preset.name().toLowerCase().indexOf(q) === -1)
-                    continue;
-
+            if (idMatch) {
                 result.push({
-                    entity: entity,
-                    geometry: context.geometry(entity.id),
-                    preset: preset,
-                    name: name
+                    id: idMatch[0],
+                    geometry: idMatch[1] === 'n' ? 'point' : idMatch[1] === 'w' ? 'line' : 'relation',
+                    type: idMatch[1] === 'n' ? t('inspector.node') : idMatch[1] === 'w' ? t('inspector.way') : t('inspector.relation'),
+                    name: idMatch[2]
                 });
-
-                if (result.length > 200)
-                    break;
             }
+
+            var locationMatch = sexagesimal.pair(q.toUpperCase()) || q.match(/^(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$/);
+
+            if (locationMatch) {
+                var loc = [parseFloat(locationMatch[0]), parseFloat(locationMatch[1])];
+                result.push({
+                    id: -1,
+                    geometry: 'point',
+                    type: t('inspector.location'),
+                    name: loc[0].toFixed(6) + ', ' + loc[1].toFixed(6),
+                    location: loc
+                });
+            }
+
+            function addEntity(entity) {
+                if (entity.id in entities || result.length > 200)
+                    return;
+
+                entities[entity.id] = true;
+
+                var name = iD.util.displayName(entity) || '';
+                if (name.toLowerCase().indexOf(q) >= 0) {
+                    result.push({
+                        id: entity.id,
+                        entity: entity,
+                        geometry: context.geometry(entity.id),
+                        type: context.presets().match(entity, graph).name(),
+                        name: name
+                    });
+                }
+
+                graph.parentRelations(entity).forEach(function(parent) {
+                    addEntity(parent);
+                });
+            }
+
+            var visible = context.surface().selectAll('.point, .line, .area')[0];
+            for (var i = 0; i < visible.length && result.length <= 200; i++) {
+                addEntity(visible[i].__data__);
+            }
+
+            (geocodeResults || []).forEach(function(d) {
+                // https://github.com/openstreetmap/iD/issues/1890
+                if (d.osm_type && d.osm_id) {
+                    result.push({
+                        id: iD.Entity.id.fromOSM(d.osm_type, d.osm_id),
+                        geometry: d.osm_type === 'relation' ? 'relation' : d.osm_type === 'way' ? 'line' : 'point',
+                        type: d.type !== 'yes' ? (d.type.charAt(0).toUpperCase() + d.type.slice(1)).replace('_', ' ')
+                                               : (d.class.charAt(0).toUpperCase() + d.class.slice(1)).replace('_', ' '),
+                        name: d.display_name,
+                        extent: new iD.geo.Extent(
+                            [parseFloat(d.boundingbox[3]), parseFloat(d.boundingbox[0])],
+                            [parseFloat(d.boundingbox[2]), parseFloat(d.boundingbox[1])])
+                    });
+                }
+            });
 
             return result;
         }
 
         function drawList() {
-            list.classed('filtered', search.property('value').length);
+            var value = search.property('value'),
+                results = features();
+
+            list.classed('filtered', value.length);
+
+            var noResultsWorldwide = geocodeResults && geocodeResults.length === 0;
+
+            var resultsIndicator = list.selectAll('.no-results-item')
+                .data([0])
+                .enter().append('button')
+                .property('disabled', true)
+                .attr('class', 'no-results-item');
+
+            resultsIndicator.append('span')
+                .attr('class', 'icon alert');
+
+            resultsIndicator.append('span')
+                .attr('class', 'entity-name');
+
+            list.selectAll('.no-results-item .entity-name')
+                .text(noResultsWorldwide ? t('geocoder.no_results_worldwide') : t('geocoder.no_results_visible'));
+
+            list.selectAll('.geocode-item')
+                .data([0])
+                .enter().append('button')
+                .attr('class', 'geocode-item')
+                .on('click', geocode)
+                .append('div')
+                .attr('class', 'label')
+                .append('span')
+                .attr('class', 'entity-name')
+                .text(t('geocoder.search'));
+
+            list.selectAll('.no-results-item')
+                .style('display', (value.length && !results.length) ? 'block' : 'none');
+
+            list.selectAll('.geocode-item')
+                .style('display', (value && geocodeResults === undefined) ? 'block' : 'none');
+
+            list.selectAll('.feature-list-item')
+                .data([-1])
+                .remove();
 
             var items = list.selectAll('.feature-list-item')
-                .data(features(), function(d) { return d.entity.id; });
+                .data(results, function(d) { return d.id; });
 
-            var enter = items.enter().append('button')
+            var enter = items.enter().insert('button', '.geocode-item')
                 .attr('class', 'feature-list-item')
-                .call(iD.ui.PresetIcon()
-                    .geometry(function(d) { return d.geometry })
-                    .preset(function(d) { return d.preset; }))
-                .on('mouseover', function(d) { mouseover(d.entity); })
-                .on('mouseout', function(d) { mouseout(); })
-                .on('click', function(d) { click(d.entity); });
+                .on('mouseover', mouseover)
+                .on('mouseout', mouseout)
+                .on('click', click);
 
             var label = enter.append('div')
                 .attr('class', 'label');
 
             label.append('span')
+                .attr('class', function(d) { return d.geometry + ' icon icon-pre-text'; });
+
+            label.append('span')
                 .attr('class', 'entity-type')
-                .text(function(d) { return d.preset.name(); });
+                .text(function(d) { return d.type; });
 
             label.append('span')
                 .attr('class', 'entity-name')
@@ -113,16 +203,10 @@ iD.ui.FeatureList = function(context) {
                 .remove();
         }
 
-        function mouseover(entity) {
-            var selector = '.' + entity.id;
+        function mouseover(d) {
+            if (d.id === -1) return;
 
-            if (entity.type === 'relation') {
-                entity.members.forEach(function(member) {
-                    selector += ', .' + member.id;
-                });
-            }
-
-            context.surface().selectAll(selector)
+            context.surface().selectAll(iD.util.entityOrMemberSelector([d.id], context.graph()))
                 .classed('hover', true);
         }
 
@@ -131,8 +215,24 @@ iD.ui.FeatureList = function(context) {
                 .classed('hover', false);
         }
 
-        function click(entity) {
-            context.enter(iD.modes.Select(context, [entity.id]));
+        function click(d) {
+            d3.event.preventDefault();
+            if (d.location) {
+                context.map().centerZoom([d.location[1], d.location[0]], 20);
+            }
+            else if (d.entity) {
+                context.enter(iD.modes.Select(context, [d.entity.id]));
+            } else {
+                context.loadEntity(d.id);
+            }
+        }
+
+        function geocode() {
+            var searchVal = encodeURIComponent(search.property('value'));
+            d3.json('http://nominatim.openstreetmap.org/search/' + searchVal + '?limit=10&format=json', function(err, resp) {
+                geocodeResults = resp || [];
+                drawList();
+            });
         }
     }
 

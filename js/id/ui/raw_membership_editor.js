@@ -2,6 +2,7 @@ iD.ui.RawMembershipEditor = function(context) {
     var id, showBlank;
 
     function selectRelation(d) {
+        d3.event.preventDefault();
         context.enter(iD.modes.Select(context, [d.relation.id]));
     }
 
@@ -14,9 +15,22 @@ iD.ui.RawMembershipEditor = function(context) {
 
     function addMembership(d, role) {
         showBlank = false;
-        context.perform(
-            iD.actions.AddMember(d.relation.id, {id: id, type: context.entity(id).type, role: role}),
-            t('operations.add_member.annotation'))
+
+        if (d.relation) {
+            context.perform(
+                iD.actions.AddMember(d.relation.id, {id: id, type: context.entity(id).type, role: role}),
+                t('operations.add_member.annotation'));
+
+        } else {
+            var relation = iD.Relation();
+
+            context.perform(
+                iD.actions.AddEntity(relation),
+                iD.actions.AddMember(relation.id, {id: id, type: context.entity(id).type, role: role}),
+                t('operations.add.annotation.relation'));
+
+            context.enter(iD.modes.Select(context, [relation.id]));
+        }
     }
 
     function deleteMembership(d) {
@@ -26,25 +40,34 @@ iD.ui.RawMembershipEditor = function(context) {
     }
 
     function relations(q) {
-        var result = [],
+        var newRelation = {
+                relation: null,
+                value: t('inspector.new_relation')
+            },
+            result = [],
             graph = context.graph();
 
         context.intersects(context.extent()).forEach(function(entity) {
-            if (entity.type !== 'relation')
+            if (entity.type !== 'relation' || entity.id === id)
                 return;
 
             var presetName = context.presets().match(entity, graph).name(),
                 entityName = iD.util.displayName(entity) || '';
 
-            if (q && entityName.toLowerCase().indexOf(q) === -1 &&
-                presetName.toLowerCase().indexOf(q) === -1)
+            var value = presetName + ' ' + entityName;
+            if (q && value.toLowerCase().indexOf(q.toLowerCase()) === -1)
                 return;
 
             result.push({
                 relation: entity,
-                value: presetName + ' ' + entityName
+                value: value
             });
         });
+
+        result.sort(function(a, b) {
+            return iD.Relation.creationOrder(a.relation, b.relation);
+        });
+        result.unshift(newRelation);
 
         return result;
     }
@@ -58,7 +81,7 @@ iD.ui.RawMembershipEditor = function(context) {
                 if (member.id === entity.id) {
                     memberships.push({relation: relation, member: member, index: index});
                 }
-            })
+            });
         });
 
         selection.call(iD.ui.Disclosure()
@@ -129,7 +152,8 @@ iD.ui.RawMembershipEditor = function(context) {
                     .attr('type', 'text')
                     .attr('class', 'member-entity-input')
                     .call(d3.combobox()
-                        .fetcher(function(value, _, callback) {
+                        .minItems(1)
+                        .fetcher(function(value, callback) {
                             callback(relations(value));
                         })
                         .on('accept', function(d) {

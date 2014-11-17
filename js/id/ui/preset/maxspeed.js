@@ -8,7 +8,7 @@ iD.ui.preset.maxspeed = function(field, context) {
         input;
 
     var metricValues = [20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120],
-        imperialValues = [20, 25, 30, 40, 45, 50, 55, 65, 70];
+        imperialValues = [20, 25, 30, 35, 40, 45, 50, 55, 65, 70];
 
     function maxspeed(selection) {
         combobox = d3.combobox();
@@ -23,9 +23,9 @@ iD.ui.preset.maxspeed = function(field, context) {
             .attr('placeholder', field.placeholder());
 
         input
+            .call(combobox)
             .on('change', change)
-            .on('blur', change)
-            .call(combobox);
+            .on('blur', change);
 
         var childNodes = context.graph().childNodes(context.entity(entity.id)),
             loc = childNodes[~~(childNodes.length/2)].loc;
@@ -49,8 +49,8 @@ iD.ui.preset.maxspeed = function(field, context) {
             .call(unitCombobox);
 
         function changeUnits() {
-            imperial = unitInput.property('value') === 'mph';
-            unitInput.property('value', imperial ? 'mph' : 'km/h');
+            imperial = unitInput.value() === 'mph';
+            unitInput.value(imperial ? 'mph' : 'km/h');
             setSuggestions();
             change();
         }
@@ -59,7 +59,7 @@ iD.ui.preset.maxspeed = function(field, context) {
 
     function setSuggestions() {
         combobox.data((imperial ? imperialValues : metricValues).map(comboValues));
-        unitInput.property('value', imperial ? 'mph' : 'km/h');
+        unitInput.value(imperial ? 'mph' : 'km/h');
     }
 
     function comboValues(d) {
@@ -71,7 +71,7 @@ iD.ui.preset.maxspeed = function(field, context) {
 
     function change() {
         var tag = {},
-            value = input.property('value');
+            value = input.value();
 
         if (!value) {
             tag[field.key] = undefined;
@@ -96,7 +96,7 @@ iD.ui.preset.maxspeed = function(field, context) {
 
         setSuggestions();
 
-        input.property('value', value || '');
+        input.value(value || '');
     };
 
     maxspeed.focus = function() {

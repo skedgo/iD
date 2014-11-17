@@ -31,7 +31,12 @@ iD.ui.Inspector = function(context) {
         var $presetPane = $wrap.select('.preset-list-pane');
         var $editorPane = $wrap.select('.entity-editor-pane');
 
-        var showEditor = state === 'hover' || context.entity(entityID).isUsed(context.graph());
+        var graph = context.graph(),
+            entity = context.entity(entityID),
+            showEditor = state === 'hover' ||
+                entity.isUsed(graph) ||
+                entity.isHighwayIntersection(graph);
+
         if (showEditor) {
             $wrap.style('right', '0%');
             $editorPane.call(entityEditor);
@@ -52,7 +57,7 @@ iD.ui.Inspector = function(context) {
 
         function showList(preset) {
             $wrap.transition()
-                .style('right', '-100%');
+                .styleTween('right', function() { return d3.interpolate('0%', '-100%'); });
 
             $presetPane.call(presetList
                 .preset(preset)
@@ -61,7 +66,7 @@ iD.ui.Inspector = function(context) {
 
         function setPreset(preset) {
             $wrap.transition()
-                .style('right', '0%');
+                .styleTween('right', function() { return d3.interpolate('-100%', '0%'); });
 
             $editorPane.call(entityEditor
                 .preset(preset));
@@ -71,6 +76,7 @@ iD.ui.Inspector = function(context) {
     inspector.state = function(_) {
         if (!arguments.length) return state;
         state = _;
+        entityEditor.state(state);
         return inspector;
     };
 

@@ -25,10 +25,10 @@ iD.actions.MergePolygon = function(ids, newRelationId) {
         // Each element is itself an array of objects with an id property, and has a
         // locs property which is an array of the locations forming the polygon.
         var polygons = entities.multipolygon.reduce(function(polygons, m) {
-            return polygons.concat(iD.geo.joinMemberWays(m.members, graph));
+            return polygons.concat(iD.geo.joinWays(m.members, graph));
         }, []).concat(entities.closedWay.map(function(d) {
             var member = [{id: d.id}];
-            member.locs = graph.childNodes(d).map(function(n) { return n.loc; });
+            member.nodes = graph.childNodes(d);
             return member;
         }));
 
@@ -38,7 +38,9 @@ iD.actions.MergePolygon = function(ids, newRelationId) {
         var contained = polygons.map(function(w, i) {
             return polygons.map(function(d, n) {
                 if (i === n) return null;
-                return iD.geo.polygonContainsPolygon(d.locs, w.locs);
+                return iD.geo.polygonContainsPolygon(
+                    _.pluck(d.nodes, 'loc'),
+                    _.pluck(w.nodes, 'loc'));
             });
         });
 
@@ -56,7 +58,7 @@ iD.actions.MergePolygon = function(ids, newRelationId) {
             return _.any(contained[i]);
         }
 
-        function filterContained(d, i) {
+        function filterContained(d) {
             return d.filter(isContained);
         }
 
@@ -84,10 +86,14 @@ iD.actions.MergePolygon = function(ids, newRelationId) {
             graph = graph.remove(m);
         });
 
-        members.forEach(function(m) {
-            var entity = graph.entity(m.id);
-            relation = relation.mergeTags(entity.tags);
-            graph = graph.replace(entity.update({ tags: {} }));
+        entities.closedWay.forEach(function(way) {
+            function isThisOuter(m) {
+                return m.id === way.id && m.role !== 'inner';
+            }
+            if (members.some(isThisOuter)) {
+                relation = relation.mergeTags(way.tags);
+                graph = graph.replace(way.update({ tags: {} }));
+            }
         });
 
         return graph.replace(relation.update({
@@ -101,6 +107,8 @@ iD.actions.MergePolygon = function(ids, newRelationId) {
         if (entities.other.length > 0 ||
             entities.closedWay.length + entities.multipolygon.length < 2)
             return 'not_eligible';
+        if (!entities.multipolygon.every(function(r) { return r.isComplete(graph); }))
+            return 'incomplete_relation';
     };
 
     return action;

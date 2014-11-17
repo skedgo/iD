@@ -1,6 +1,5 @@
 iD.ui.RawTagEditor = function(context) {
     var event = d3.dispatch('change'),
-        taginfo = iD.taginfo(),
         showBlank = false,
         state,
         preset,
@@ -12,12 +11,12 @@ iD.ui.RawTagEditor = function(context) {
 
         selection.call(iD.ui.Disclosure()
             .title(t('inspector.all_tags') + ' (' + count + ')')
-            .expanded(iD.ui.RawTagEditor.expanded || preset.isFallback())
+            .expanded(context.storage('raw_tag_editor.expanded') === 'true' || preset.isFallback())
             .on('toggled', toggled)
             .content(content));
 
         function toggled(expanded) {
-            iD.ui.RawTagEditor.expanded = expanded;
+            context.storage('raw_tag_editor.expanded', expanded);
             if (expanded) {
                 selection.node().parentNode.scrollTop += 200;
             }
@@ -77,30 +76,33 @@ iD.ui.RawTagEditor = function(context) {
             .append('span')
             .attr('class', 'icon delete');
 
+        if (context.taginfo()) {
+            $enter.each(bindTypeahead);
+        }
+
         // Update
 
         $items.order();
 
         $items.each(function(tag) {
-            var reference = iD.ui.TagReference({key: tag.key});
+            var reference = iD.ui.TagReference({key: tag.key}, context);
 
             if (state === 'hover') {
                 reference.showing(false);
             }
 
             d3.select(this)
-                .each(bindTypeahead)
                 .call(reference.button)
                 .call(reference.body);
         });
 
         $items.select('input.key')
-            .property('value', function(d) { return d.key; })
+            .value(function(d) { return d.key; })
             .on('blur', keyChange)
             .on('change', keyChange);
 
         $items.select('input.value')
-            .property('value', function(d) { return d.value; })
+            .value(function(d) { return d.value; })
             .on('blur', valueChange)
             .on('change', valueChange)
             .on('keydown.push-more', pushMore);
@@ -119,8 +121,7 @@ iD.ui.RawTagEditor = function(context) {
         }
 
         function bindTypeahead() {
-            var geometry = context.geometry(id),
-                row = d3.select(this),
+            var row = d3.select(this),
                 key = row.selectAll('input.key'),
                 value = row.selectAll('input.value');
 
@@ -138,10 +139,10 @@ iD.ui.RawTagEditor = function(context) {
             }
 
             key.call(d3.combobox()
-                .fetcher(function(value, __, callback) {
-                    taginfo.keys({
+                .fetcher(function(value, callback) {
+                    context.taginfo().keys({
                         debounce: true,
-                        geometry: geometry,
+                        geometry: context.geometry(id),
                         query: value
                     }, function(err, data) {
                         if (!err) callback(sort(value, data));
@@ -149,11 +150,11 @@ iD.ui.RawTagEditor = function(context) {
                 }));
 
             value.call(d3.combobox()
-                .fetcher(function(value, __, callback) {
-                    taginfo.values({
+                .fetcher(function(value, callback) {
+                    context.taginfo().values({
                         debounce: true,
-                        key: key.property('value'),
-                        geometry: geometry,
+                        key: key.value(),
+                        geometry: context.geometry(id),
                         query: value
                     }, function(err, data) {
                         if (!err) callback(sort(value, data));
@@ -162,10 +163,22 @@ iD.ui.RawTagEditor = function(context) {
         }
 
         function keyChange(d) {
-            var tag = {};
-            tag[d.key] = undefined;
-            tag[this.value] = d.value;
-            d.key = this.value; // Maintain DOM identity through the subsequent update.
+            var kOld = d.key,
+                kNew = this.value.trim(),
+                tag = {};
+
+            if (kNew && kNew !== kOld) {
+                var match = kNew.match(/^(.*?)(?:_(\d+))?$/),
+                    base = match[1],
+                    suffix = +(match[2] || 1);
+                while (tags[kNew]) {  // rename key if already in use
+                    kNew = base + '_' + suffix++;
+                }
+            }
+            tag[kOld] = undefined;
+            tag[kNew] = d.value;
+            d.key = kNew; // Maintain DOM identity through the subsequent update.
+            this.value = kNew;
             event.change(tag);
         }
 

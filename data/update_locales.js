@@ -36,28 +36,9 @@ asyncMap(resources, getResource, function(err, locales) {
 
     for (var i in locale) {
         if (i === 'en') continue;
-        validateTranslations(i, locale[i]);
         fs.writeFileSync(outdir + i + '.json', JSON.stringify(locale[i], null, 4));
     }
 });
-
-function validateTranslations(locale, translations) {
-    var preset = delve(translations, 'presets.presets.amenity/cafe.name'),
-        intro = delve(translations, 'intro.points.search');
-
-    if (preset && intro && intro.toLocaleLowerCase().indexOf(preset.toLocaleLowerCase()) < 0) {
-        console.warn(locale + ': "Cafe" is translated as "' + preset + '", which was not found in "' + intro + '"');
-        console.warn('Edit on Transifex: https://www.transifex.com/projects/p/id-editor/translate/#' + locale + '/core/?key=intro.points.search');
-    }
-
-    preset = delve(translations, 'presets.presets.leisure/playground.name');
-    intro = delve(translations, 'intro.areas.search');
-
-    if (preset && intro && intro.toLocaleLowerCase().indexOf(preset.toLocaleLowerCase()) < 0) {
-        console.warn(locale + ': "Playground" is translated as "' + preset + '", which was not found in "' + intro + '"');
-        console.warn('Edit on Transifex: https://www.transifex.com/projects/p/id-editor/translate/#' + locale + '/core/?key=intro.areas.search');
-    }
-}
 
 function getResource(resource, callback) {
     resource = project + 'resource/' + resource + '/';
@@ -69,7 +50,7 @@ function getResource(resource, callback) {
 
             var locale = {};
             results.forEach(function(result, i) {
-                locale[codes[i]] = yaml.load(result)[codes[i]];
+                locale[codes[i]] = result;
             });
 
             callback(null, locale);
@@ -82,10 +63,13 @@ function getResource(resource, callback) {
 
 function getLanguage(resource) {
     return function(code, callback) {
-        request.get(resource + 'translation/' + code, { auth : auth },
+        code = code.replace(/-/g, '_');
+        var url = resource + 'translation/' + code;
+        if (code === 'vi') url += '?mode=reviewed';
+        request.get(url, { auth : auth },
             function(err, resp, body) {
             if (err) return callback(err);
-            callback(null, JSON.parse(body).content);
+            callback(null, yaml.load(JSON.parse(body).content)[code]);
         });
     };
 }

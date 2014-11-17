@@ -10,16 +10,14 @@ iD.svg.Points = function(projection, context) {
         return b.loc[1] - a.loc[1];
     }
 
-    function drawPoints(surface, points) {
-        points = points || drawPoints.points();
-
-        if (points.length > 100) {
-            return surface.select('.layer-hit').selectAll('g.point').remove();
-        }
+    return function drawPoints(surface, entities, filter) {
+        var graph = context.graph(),
+            points = _.filter(entities, function(e) { return e.geometry(graph) === 'point'; });
 
         points.sort(sortY);
 
         var groups = surface.select('.layer-hit').selectAll('g.point')
+            .filter(filter)
             .data(points, iD.Entity.key);
 
         var group = groups.enter()
@@ -53,22 +51,5 @@ iD.svg.Points = function(projection, context) {
 
         groups.exit()
             .remove();
-    }
-
-    drawPoints.points = function() {
-        var graph = context.graph(),
-            entities = context.intersects(context.extent()),
-            points = [];
-
-        for (var i = 0; i < entities.length; i++) {
-            var entity = entities[i];
-            if (entity.geometry(graph) === 'point') {
-                points.push(entity);
-            }
-        }
-
-        return points;
     };
-
-    return drawPoints;
 };

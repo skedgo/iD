@@ -16,7 +16,7 @@ iD.ui.PresetList = function(context) {
         var message = messagewrap.append('h3')
             .text(t('inspector.choose'));
 
-        if (currentPreset) {
+        if (context.entity(id).isUsed(context.graph())) {
             messagewrap.append('button')
                 .attr('class', 'preset-choose')
                 .on('click', function() { event.choose(currentPreset); })
@@ -51,23 +51,27 @@ iD.ui.PresetList = function(context) {
             }
         }
 
-        function keyup() {
+        function keypress() {
             // enter
             var value = search.property('value');
             if (d3.event.keyCode === 13 && value.length) {
                 list.selectAll('.preset-list-item:first-child').datum().choose();
+            }
+        }
+
+        function inputevent() {
+            var value = search.property('value');
+            list.classed('filtered', value.length);
+            if (value.length) {
+                var results = presets.search(value, geometry);
+                message.text(t('inspector.results', {
+                    n: results.collection.length,
+                    search: value
+                }));
+                list.call(drawList, results);
             } else {
-                list.classed('filtered', value.length);
-                if (value.length) {
-                    var results = presets.search(value, geometry);
-                    message.text(t('inspector.results', {
-                        n: results.collection.length,
-                        search: value
-                    }));
-                    list.call(drawList, results);
-                } else {
-                    list.call(drawList, context.presets().defaults(geometry, 36));
-                }
+                list.call(drawList, context.presets().defaults(geometry, 36));
+                message.text(t('inspector.choose'));
             }
         }
 
@@ -79,7 +83,8 @@ iD.ui.PresetList = function(context) {
             .attr('placeholder', t('inspector.search'))
             .attr('type', 'search')
             .on('keydown', keydown)
-            .on('keyup', keyup);
+            .on('keypress', keypress)
+            .on('input', inputevent);
 
         searchWrap.append('span')
             .attr('class', 'icon search');
@@ -98,7 +103,7 @@ iD.ui.PresetList = function(context) {
 
     function drawList(list, presets) {
         var collection = presets.collection.map(function(preset) {
-            return preset.members ? CategoryItem(preset) : PresetItem(preset)
+            return preset.members ? CategoryItem(preset) : PresetItem(preset);
         });
 
         var items = list.selectAll('.preset-list-item')
@@ -139,7 +144,8 @@ iD.ui.PresetList = function(context) {
 
             box = selection.append('div')
                 .attr('class', 'subgrid col12')
-                .style('max-height', '0px');
+                .style('max-height', '0px')
+                .style('opacity', 0);
 
             box.append('div')
                 .attr('class', 'arrow');
@@ -207,7 +213,7 @@ iD.ui.PresetList = function(context) {
         };
 
         item.preset = preset;
-        item.reference = iD.ui.TagReference(preset.reference());
+        item.reference = iD.ui.TagReference(preset.reference(context.geometry(id)), context);
 
         return item;
     }
@@ -221,6 +227,7 @@ iD.ui.PresetList = function(context) {
     presetList.entityID = function(_) {
         if (!arguments.length) return id;
         id = _;
+        presetList.preset(context.presets().match(context.entity(id), context.graph()));
         return presetList;
     };
 

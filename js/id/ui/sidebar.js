@@ -7,6 +7,8 @@ iD.ui.Sidebar = function(context) {
             .attr('class', 'feature-list-pane')
             .call(iD.ui.FeatureList(context));
 
+        selection.call(iD.ui.Notice(context));
+
         var inspectorWrap = selection.append('div')
             .attr('class', 'inspector-hidden inspector-wrap fr');
 
@@ -23,11 +25,14 @@ iD.ui.Sidebar = function(context) {
 
                     inspectorWrap.call(inspector);
                 }
-            } else {
+            } else if (!current) {
                 featureListWrap.classed('inspector-hidden', false);
                 inspectorWrap.classed('inspector-hidden', true);
+                inspector.state('hide');
             }
         };
+
+        sidebar.hover = _.throttle(sidebar.hover, 200);
 
         sidebar.select = function(id, newFeature) {
             if (!current && id) {
@@ -43,15 +48,17 @@ iD.ui.Sidebar = function(context) {
 
                     inspectorWrap.call(inspector);
                 }
-            } else {
+            } else if (!current) {
                 featureListWrap.classed('inspector-hidden', false);
                 inspectorWrap.classed('inspector-hidden', true);
+                inspector.state('hide');
             }
         };
 
         sidebar.show = function(component) {
             featureListWrap.classed('inspector-hidden', true);
             inspectorWrap.classed('inspector-hidden', true);
+            if (current) current.remove();
             current = selection.append('div')
                 .attr('class', 'sidebar-component')
                 .call(component);
@@ -59,7 +66,8 @@ iD.ui.Sidebar = function(context) {
 
         sidebar.hide = function() {
             featureListWrap.classed('inspector-hidden', false);
-            current.remove();
+            inspectorWrap.classed('inspector-hidden', true);
+            if (current) current.remove();
             current = null;
         };
     }

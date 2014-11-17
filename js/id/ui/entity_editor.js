@@ -2,8 +2,11 @@ iD.ui.EntityEditor = function(context) {
     var event = d3.dispatch('choose'),
         state = 'select',
         id,
-        preset;
+        preset,
+        reference;
 
+    var presetEditor = iD.ui.preset(context)
+        .on('change', changeTags);
     var rawTagEditor = iD.ui.RawTagEditor(context)
         .on('change', changeTags);
 
@@ -20,11 +23,6 @@ iD.ui.EntityEditor = function(context) {
             .attr('class', 'header fillL cf');
 
         $enter.append('button')
-            .attr('class', 'fl preset-reset')
-            .append('span')
-            .attr('class', 'icon back');
-
-        $enter.append('button')
             .attr('class', 'fr preset-close')
             .append('span')
             .attr('class', 'icon close');
@@ -34,7 +32,7 @@ iD.ui.EntityEditor = function(context) {
         // Update
 
         $header.select('h3')
-            .text(preset.name());
+            .text(t('inspector.edit'));
 
         $header.select('.preset-close')
             .on('click', function() {
@@ -50,12 +48,22 @@ iD.ui.EntityEditor = function(context) {
             .attr('class', 'inspector-body');
 
         $enter.append('div')
-            .attr('class', 'preset-icon-wrap inspector-inner')
+            .attr('class', 'preset-list-item inspector-inner')
+            .append('div')
+            .attr('class', 'preset-list-button-wrap')
             .append('button')
-            .attr('class', 'preset-reset preset-icon-button')
+            .attr('class', 'preset-list-button preset-reset')
             .call(bootstrap.tooltip()
                 .title(t('inspector.back_tooltip'))
-                .placement('right'));
+                .placement('bottom'))
+            .append('div')
+            .attr('class', 'label');
+
+        $body.select('.preset-list-button-wrap')
+            .call(reference.button);
+
+        $body.select('.preset-list-item')
+            .call(reference.body);
 
         $enter.append('div')
             .attr('class', 'inspector-border inspector-preset');
@@ -76,18 +84,20 @@ iD.ui.EntityEditor = function(context) {
 
         // Update
 
-        $body.select('.preset-icon-wrap button')
+        $body.select('.preset-list-item button')
             .call(iD.ui.PresetIcon()
                 .geometry(context.geometry(id))
                 .preset(preset));
 
+        $body.select('.preset-list-item .label')
+            .text(preset.name());
+
         $body.select('.inspector-preset')
-            .call(iD.ui.preset(context)
+            .call(presetEditor
                 .preset(preset)
                 .entityID(id)
                 .tags(tags)
-                .state(state)
-                .on('change', changeTags));
+                .state(state));
 
         $body.select('.raw-tag-editor')
             .call(rawTagEditor
@@ -111,9 +121,10 @@ iD.ui.EntityEditor = function(context) {
                 .entityID(id));
 
         function historyChanged() {
+            if (state === 'hide') return;
             var entity = context.hasEntity(id);
             if (!entity) return;
-            preset = context.presets().match(entity, context.graph());
+            entityEditor.preset(context.presets().match(entity, context.graph()));
             entityEditor(selection);
         }
 
@@ -123,11 +134,13 @@ iD.ui.EntityEditor = function(context) {
 
     function clean(o) {
         var out = {}, k, v;
+        /*jshint -W083 */
         for (k in o) {
             if (k && (v = o[k]) !== undefined) {
-                out[k] = v.trim();
+                out[k] = v.split(';').map(function(s) { return s.trim(); }).join(';');
             }
         }
+        /*jshint +W083 */
         return out;
     }
 
@@ -151,13 +164,17 @@ iD.ui.EntityEditor = function(context) {
     entityEditor.entityID = function(_) {
         if (!arguments.length) return id;
         id = _;
-        preset = context.presets().match(context.entity(id), context.graph());
+        entityEditor.preset(context.presets().match(context.entity(id), context.graph()));
         return entityEditor;
     };
 
     entityEditor.preset = function(_) {
         if (!arguments.length) return preset;
-        preset = _;
+        if (_ !== preset) {
+            preset = _;
+            reference = iD.ui.TagReference(preset.reference(context.geometry(id)), context)
+                .showing(false);
+        }
         return entityEditor;
     };
 

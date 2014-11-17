@@ -17,7 +17,9 @@
     <script src="lib/bind-shim.js"></script>
 
     <!-- include source files here... -->
-    <script src='../dist/iD.min.js'></script>
+    <script src='../dist/iD.js'></script>
+    <script src='../dist/presets.js'></script>
+    <script src='../dist/imagery.js'></script>
 
     <script src="spec/spec_helpers.js"></script>
 
@@ -47,8 +49,10 @@
     <script src="spec/actions/noop.js"></script>
     <script src="spec/actions/reverse.js"></script>
     <script src="spec/actions/split.js"></script>
+    <script src="spec/actions/unrestrict_turn.js"></script>
 
     <script src="spec/geo/extent.js"></script>
+    <script src="spec/geo/intersection.js"></script>
     <script src="spec/geo/multipolygon.js"></script>
 
     <script src="spec/core/connection.js"></script>
@@ -61,8 +65,9 @@
     <script src="spec/core/difference.js"></script>
     <script src="spec/core/tree.js"></script>
 
-    <script src="spec/renderer/background.js"></script>
+    <script src="spec/renderer/tile_layer.js"></script>
     <script src="spec/renderer/background_source.js"></script>
+    <script src="spec/renderer/features.js"></script>
     <script src="spec/renderer/map.js"></script>
 
     <script src="spec/svg.js"></script>
@@ -75,15 +80,22 @@
 
     <script src="spec/ui/inspector.js"></script>
     <script src="spec/ui/raw_tag_editor.js"></script>
-    <script src="spec/ui/geocoder.js"></script>
     <script src="spec/ui/modal.js"></script>
     <script src="spec/ui/flash.js"></script>
     <script src="spec/ui/confirm.js"></script>
     <script src="spec/ui/cmd.js"></script>
 
+    <script src="spec/ui/preset/access.js"></script>
+    <script src="spec/ui/preset/localized.js"></script>
+    <script src="spec/ui/preset/wikipedia.js"></script>
+
+    <script src="spec/countrycode.js"></script>
     <script src="spec/geo.js"></script>
     <script src="spec/taginfo.js"></script>
+
     <script src="spec/util.js"></script>
+    <script src='spec/util/session_mutex.js'></script>
+    <script src='spec/util/suggest_names.js'></script>
 
     <script src="spec/behavior/hash.js"></script>
     <script src="spec/behavior/hover.js"></script>
@@ -96,6 +108,7 @@
     <script src="spec/presets/preset.js"></script>
     <script src="spec/presets/collection.js"></script>
     <script src="spec/presets/category.js"></script>
+    <script src="spec/id.js"></script>
 
     <script>
         (window.mochaPhantomJS || window.mocha).run();
