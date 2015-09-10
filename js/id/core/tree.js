@@ -39,14 +39,22 @@ iD.Tree = function(head) {
 
     var tree = {};
 
-    tree.rebase = function(entities) {
+    tree.rebase = function(entities, force) {
         var insertions = {};
 
         for (var i = 0; i < entities.length; i++) {
             var entity = entities[i];
 
-            if (head.entities.hasOwnProperty(entity.id) || rectangles[entity.id])
+            if (!entity.visible)
                 continue;
+
+            if (head.entities.hasOwnProperty(entity.id) || rectangles[entity.id]) {
+                if (!force) {
+                    continue;
+                } else if (rectangles[entity.id]) {
+                    rtree.remove(rectangles[entity.id]);
+                }
+            }
 
             insertions[entity.id] = entity;
             updateParents(entity, insertions, {});

@@ -226,7 +226,6 @@
     "commit": {
         "title": "Simpan Perubahan",
         "description_placeholder": "Deskripsi singkat kontribusi Anda",
-        "message_label": "Sampaikan pesan",
         "upload_explanation": "Perubahan yang anda unggah akan tampil di seluruh peta yang menggunakan data OpenStreetMap.",
         "upload_explanation_with_user": "Perubahan yang anda unggah sebagai {user} akan tampil di seluruh peta yang menggunakan data OpenStreetMap.",
         "save": "Simpan",
@@ -286,6 +285,24 @@
         "fix_misalignment": "Perbaiki perataan",
         "reset": "ulang"
     },
+    "feature": {
+        "paths": {
+            "description": "Jalan Kecil"
+        },
+        "buildings": {
+            "description": "Bangunan"
+        },
+        "boundaries": {
+            "description": "Batas",
+            "tooltip": "Batas Administrasi"
+        },
+        "past_future": {
+            "description": "Masa Lalu/Akan Datang"
+        },
+        "others": {
+            "description": "Lainnya"
+        }
+    },
     "restore": {
         "heading": "Anda memiliki perubahan yang belum disimpan",
         "description": "Apakah anda ingin mengembalikan perubahan yang belum tersimpan dari sesi penyuntingan sebelumnya?",
@@ -296,7 +313,6 @@
         "title": "Simpan",
         "help": "Simpan perubahan ke OpenStreetMap, jadikan mereka terlihat oleh pengguna lain.",
         "no_changes": "Tak ada perubahan yang bisa disimpan.",
-        "error": "Sebuah kesalahan terjadi ketika penyimpanan.",
         "uploading": "Mengunggah perubahan ke OpenStreetMap.",
         "unsaved_changes": "Anda mememiliki perubahan yang belum tersimpan"
     },
@@ -356,8 +372,7 @@
         "view_on_mapillary": "Lihat gambar ini di Mapillary"
     },
     "help": {
-        "title": "Bantuan",
-        "help": "#Bantuan\n\nIni adalah editor untuk [OpenStreetMap] (http://www.openstreetmap.org/), \npeta dunia gratis dan bisa disunting. Anda dapat menggunakannya dengan menambahkan dan memperbarui\n data di area anda, membangun sebuah peta sumber-terbuka dan data-terbuka di seluruh dunia\n yang lebih baik untuk semua orang.\n\nPerubahan yang anda buat akan terlihat ke semua orang yang menggunakan \nOpenStreetMap. Untuk melakukan penyutingan, anda membutuhkan \n[free OpenStreetMap account] (https://www.openstreetmap.org/user/new).\n\n[iD editor](http://ideditor.com/) adalah proyek kolaborasi dengan [kode sumber tersedia di GitHub](https://github.com/openstreetmap/iD).\n"
+        "title": "Bantuan"
     },
     "intro": {
         "navigation": {
@@ -444,38 +459,38 @@
         "fields": {
             "access": {
                 "label": "Akses",
+                "options": {
+                    "designated": {
+                        "description": "Akses diperbolehkan sesuai dengan tanda atau peraturan lokal yang spesifik",
+                        "title": "Ditunjuk"
+                    },
+                    "destination": {
+                        "description": "Akses diperbolehkan hanya untuk mencapai tujuan",
+                        "title": "Tujuan"
+                    },
+                    "no": {
+                        "description": "Akses terbatas untuk umum",
+                        "title": "Terlarang"
+                    },
+                    "permissive": {
+                        "description": "Akses diperbolehkan sampai batas pemilik membatalkan izin",
+                        "title": "Dibolehkan"
+                    },
+                    "private": {
+                        "description": "Akses diperbolehkan hanya dengan perizinan dari pemilik pada tingkatan pribadi",
+                        "title": "Pribadi"
+                    },
+                    "yes": {
+                        "title": "Diizinkan"
+                    }
+                },
                 "placeholder": "Tidak diketahui",
                 "types": {
                     "access": "Umum",
-                    "foot": "Kaki",
-                    "motor_vehicle": "Sepeda Motor",
                     "bicycle": "Sepeda",
-                    "horse": "Kuda"
-                },
-                "options": {
-                    "yes": {
-                        "title": "Diizinkan"
-                    },
-                    "no": {
-                        "title": "Terlarang",
-                        "description": "Akses terbatas untuk umum"
-                    },
-                    "permissive": {
-                        "title": "Dibolehkan",
-                        "description": "Akses diperbolehkan sampai batas pemilik membatalkan izin"
-                    },
-                    "private": {
-                        "title": "Pribadi",
-                        "description": "Akses diperbolehkan hanya dengan perizinan dari pemilik pada tingkatan pribadi"
-                    },
-                    "designated": {
-                        "title": "Ditunjuk",
-                        "description": "Akses diperbolehkan sesuai dengan tanda atau peraturan lokal yang spesifik"
-                    },
-                    "destination": {
-                        "title": "Tujuan",
-                        "description": "Akses diperbolehkan hanya untuk mencapai tujuan"
-                    }
+                    "foot": "Kaki",
+                    "horse": "Kuda",
+                    "motor_vehicle": "Sepeda Motor"
                 }
             },
             "access_simple": {
@@ -488,19 +503,19 @@
             "address": {
                 "label": "Alamat",
                 "placeholders": {
+                    "city": "Kota",
+                    "country": "Negara",
+                    "district": "Kabupaten",
+                    "hamlet": "Dusun",
                     "housename": "Nama rumah",
                     "housenumber": "123",
-                    "street": "Jalan",
-                    "city": "Kota",
-                    "postcode": "Kode pos",
                     "place": "Tempat",
-                    "hamlet": "Dusun",
-                    "suburb": "Kelurahan",
-                    "subdistrict": "Kecamatan",
-                    "district": "Kabupaten",
+                    "postcode": "Kode pos",
                     "province": "Provinsi",
                     "state": "Negara Bagian",
-                    "country": "Negara"
+                    "street": "Jalan",
+                    "subdistrict": "Kecamatan",
+                    "suburb": "Kelurahan"
                 }
             },
             "admin_level": {
@@ -512,9 +527,9 @@
             "aerialway/access": {
                 "label": "Akses",
                 "options": {
+                    "both": "Keduanya",
                     "entry": "Masuk",
-                    "exit": "Keluar",
-                    "both": "Keduanya"
+                    "exit": "Keluar"
                 }
             },
             "aerialway/capacity": {
@@ -534,9 +549,9 @@
             },
             "aerialway/summer/access": {
                 "options": {
+                    "both": "Keduanya",
                     "entry": "Masuk",
-                    "exit": "Keluar",
-                    "both": "Keduanya"
+                    "exit": "Keluar"
                 }
             },
             "aeroway": {
@@ -573,29 +588,29 @@
             "cardinal_direction": {
                 "label": "Arah",
                 "options": {
-                    "N": "Utara",
                     "E": "Timur",
-                    "S": "Selatan",
-                    "W": "Barat",
-                    "NE": "Timur Laut",
-                    "SE": "Tenggara",
-                    "SW": "Barat Daya",
-                    "NW": "Barat Laut",
-                    "NNE": "Utara-timur laut",
                     "ENE": "Timur-timur laut",
                     "ESE": "Timur-tenggara",
+                    "N": "Utara",
+                    "NE": "Timur Laut",
+                    "NNE": "Utara-timur laut",
+                    "NNW": "Timur-barat laut",
+                    "NW": "Barat Laut",
+                    "S": "Selatan",
+                    "SE": "Tenggara",
                     "SSE": "Selatan-tenggara",
                     "SSW": "Selatan-barat daya",
-                    "WSW": "Barat-barat daya",
+                    "SW": "Barat Daya",
+                    "W": "Barat",
                     "WNW": "Barat-barat laut",
-                    "NNW": "Timur-barat laut"
+                    "WSW": "Barat-barat daya"
                 }
             },
             "clock_direction": {
                 "label": "Arah",
                 "options": {
-                    "clockwise": "Searah Jarum Jam",
-                    "anticlockwise": "Berlawanan Jarum Jam"
+                    "anticlockwise": "Berlawanan Jarum Jam",
+                    "clockwise": "Searah Jarum Jam"
                 }
             },
             "collection_times": {
@@ -658,9 +673,9 @@
             "fire_hydrant/type": {
                 "label": "Tipe",
                 "options": {
+                    "pond": "Kolam",
                     "underground": "Dibawah tanah",
-                    "wall": "Tembok",
-                    "pond": "Kolam"
+                    "wall": "Tembok"
                 }
             },
             "fixme": {
@@ -711,11 +726,11 @@
             "internet_access": {
                 "label": "Akses Internet",
                 "options": {
-                    "yes": "Iya",
                     "no": "Tidak",
-                    "wlan": "Wifi",
+                    "terminal": "Terminal",
                     "wired": "Kabel",
-                    "terminal": "Terminal"
+                    "wlan": "Wifi",
+                    "yes": "Iya"
                 }
             },
             "lamp_type": {
@@ -755,14 +770,14 @@
                 "placeholder": "0, 1, 2, 3..."
             },
             "mtb/scale/imba": {
-                "placeholder": "Mudah, Menengah, Susah...",
                 "options": {
                     "0": "Sangat Mudah (lingkaran putih)",
                     "1": "Mudah (lingkaran hijau)",
                     "2": "Menengah (kotak biru)",
                     "3": "Susah (berlian hitam)",
                     "4": "Sangat Susah (berlian hitam ganda)"
-                }
+                },
+                "placeholder": "Mudah, Menengah, Susah..."
             },
             "mtb/scale/uphill": {
                 "placeholder": "0, 1, 2, 3..."
@@ -786,15 +801,15 @@
             "oneway": {
                 "label": "Satu Arah",
                 "options": {
-                    "yes": "Iya",
-                    "no": "Tidak"
+                    "no": "Tidak",
+                    "yes": "Iya"
                 }
             },
             "oneway_yes": {
                 "label": "Satu Arah",
                 "options": {
-                    "yes": "Iya",
-                    "no": "Tidak"
+                    "no": "Tidak",
+                    "yes": "Iya"
                 }
             },
             "opening_hours": {
@@ -882,12 +897,12 @@
             },
             "structure": {
                 "label": "Struktur",
-                "placeholder": "Tak Diketahui",
                 "options": {
                     "bridge": "Jembatan",
-                    "tunnel": "Terowongan",
-                    "ford": "Ford"
-                }
+                    "ford": "Ford",
+                    "tunnel": "Terowongan"
+                },
+                "placeholder": "Tak Diketahui"
             },
             "studio_type": {
                 "label": "Tipe"
@@ -906,9 +921,6 @@
             },
             "tracktype": {
                 "label": "Tipe Trek"
-            },
-            "tree_type": {
-                "label": "Tipe"
             },
             "trees": {
                 "label": "Pepohonan"
@@ -937,9 +949,6 @@
             },
             "wikipedia": {
                 "label": "Wikipedia"
-            },
-            "wood": {
-                "label": "Tipe"
             }
         },
         "presets": {
@@ -1356,7 +1365,7 @@
                 "name": "Jalan Tinggal"
             },
             "highway/motorway": {
-                "name": "Jalur Motor"
+                "name": "Jalan Tol"
             },
             "highway/motorway_link": {
                 "name": "Jalan Tol"
@@ -1368,7 +1377,7 @@
                 "name": "Pejalan kaki"
             },
             "highway/primary": {
-                "name": "Jalan Utama"
+                "name": "Jalan Provinsi"
             },
             "highway/residential": {
                 "name": "Jalan Perumahan"
@@ -1377,7 +1386,7 @@
                 "name": "Tempat Peristirahatan"
             },
             "highway/secondary": {
-                "name": "Jalan Sekunder"
+                "name": "Jalan Kabupaten"
             },
             "highway/service": {
                 "name": "Jalan Layanan"
@@ -1392,7 +1401,7 @@
                 "name": "Titian"
             },
             "highway/tertiary": {
-                "name": "Jalan Tersier"
+                "name": "Jalan Kota"
             },
             "highway/track": {
                 "name": "Titian"
@@ -1402,7 +1411,7 @@
                 "terms": "<alihbahasa dengan sinonim atau istilah terkait untuk 'Lampu Merah', dipisahkan dengan koma>"
             },
             "highway/trunk": {
-                "name": "Jalan Utama"
+                "name": "Jalan Nasional"
             },
             "highway/turning_circle": {
                 "name": "Putaran"
@@ -1443,17 +1452,8 @@
             "landuse/churchyard": {
                 "name": "Halaman Gereja"
             },
-            "landuse/commercial": {
-                "name": "Komersil"
-            },
             "landuse/construction": {
                 "name": "Konstruksi"
-            },
-            "landuse/farm": {
-                "name": "Ternak"
-            },
-            "landuse/farmland": {
-                "name": "Lahan Pertanian"
             },
             "landuse/farmyard": {
                 "name": "Peternakan"
@@ -1464,23 +1464,14 @@
             "landuse/grass": {
                 "name": "Rumput"
             },
-            "landuse/industrial": {
-                "name": "Industri"
-            },
             "landuse/meadow": {
                 "name": "Padang Rumput"
-            },
-            "landuse/military": {
-                "name": "Militer"
             },
             "landuse/orchard": {
                 "name": "Kebun Buah"
             },
             "landuse/quarry": {
                 "name": "Pertambangan"
-            },
-            "landuse/residential": {
-                "name": "Pemukiman"
             },
             "landuse/vineyard": {
                 "name": "Kebun Anggur"

@@ -126,6 +126,14 @@
         },
         {
             "key": "amenity",
+            "value": "bicycle_repair_station"
+        },
+        {
+            "key": "amenity",
+            "value": "biergarten"
+        },
+        {
+            "key": "amenity",
             "value": "boat_rental"
         },
         {
@@ -151,6 +159,10 @@
         {
             "key": "amenity",
             "value": "car_wash"
+        },
+        {
+            "key": "amenity",
+            "value": "casino"
         },
         {
             "key": "amenity",
@@ -230,6 +242,10 @@
         },
         {
             "key": "amenity",
+            "value": "grit_bin"
+        },
+        {
+            "key": "amenity",
             "value": "hospital"
         },
         {
@@ -298,6 +314,10 @@
         },
         {
             "key": "amenity",
+            "value": "public_bookcase"
+        },
+        {
+            "key": "amenity",
             "value": "ranger_station"
         },
         {
@@ -306,7 +326,15 @@
         },
         {
             "key": "amenity",
+            "value": "register_office"
+        },
+        {
+            "key": "amenity",
             "value": "restaurant"
+        },
+        {
+            "key": "amenity",
+            "value": "sanitary_dump_station"
         },
         {
             "key": "amenity",
@@ -325,7 +353,7 @@
             "value": "food_bank"
         },
         {
-            "key": "social_facility_for",
+            "key": "social_facility:for",
             "value": "senior"
         },
         {
@@ -379,6 +407,9 @@
         {
             "key": "area",
             "value": "yes"
+        },
+        {
+            "key": "area:highway"
         },
         {
             "key": "barrier"
@@ -857,6 +888,10 @@
         },
         {
             "key": "highway",
+            "value": "corridor"
+        },
+        {
+            "key": "highway",
             "value": "crossing"
         },
         {
@@ -1039,6 +1074,10 @@
             "value": "wayside_shrine"
         },
         {
+            "key": "junction",
+            "value": "yes"
+        },
+        {
             "key": "landuse"
         },
         {
@@ -1083,6 +1122,10 @@
         },
         {
             "key": "landuse",
+            "value": "garages"
+        },
+        {
+            "key": "landuse",
             "value": "grass"
         },
         {
@@ -1107,6 +1150,10 @@
         },
         {
             "key": "landuse",
+            "value": "plant_nursery"
+        },
+        {
+            "key": "landuse",
             "value": "quarry"
         },
         {
@@ -1123,6 +1170,14 @@
         },
         {
             "key": "leisure"
+        },
+        {
+            "key": "leisure",
+            "value": "adult_gaming_centre"
+        },
+        {
+            "key": "leisure",
+            "value": "bowling_alley"
         },
         {
             "key": "leisure",
@@ -1151,6 +1206,10 @@
         {
             "key": "leisure",
             "value": "marina"
+        },
+        {
+            "key": "leisure",
+            "value": "nature_reserve"
         },
         {
             "key": "leisure",
@@ -1225,6 +1284,10 @@
         },
         {
             "key": "man_made",
+            "value": "adit"
+        },
+        {
+            "key": "man_made",
             "value": "breakwater"
         },
         {
@@ -1244,8 +1307,16 @@
             "value": "lighthouse"
         },
         {
+            "key": "man_made",
+            "value": "mast"
+        },
+        {
             "key": "tower:type",
             "value": "observation"
+        },
+        {
+            "key": "man_made",
+            "value": "petroleum_well"
         },
         {
             "key": "man_made",
@@ -1254,6 +1325,14 @@
         {
             "key": "man_made",
             "value": "pipeline"
+        },
+        {
+            "key": "man_made",
+            "value": "silo"
+        },
+        {
+            "key": "man_made",
+            "value": "storage_tank"
         },
         {
             "key": "man_made",
@@ -1308,6 +1387,10 @@
         },
         {
             "key": "natural",
+            "value": "cave_entrance"
+        },
+        {
+            "key": "natural",
             "value": "cliff"
         },
         {
@@ -1336,6 +1419,10 @@
         },
         {
             "key": "natural",
+            "value": "saddle"
+        },
+        {
+            "key": "natural",
             "value": "scree"
         },
         {
@@ -1349,6 +1436,14 @@
         {
             "key": "natural",
             "value": "tree"
+        },
+        {
+            "key": "natural",
+            "value": "tree_row"
+        },
+        {
+            "key": "natural",
+            "value": "volcano"
         },
         {
             "key": "natural",
@@ -1466,6 +1561,10 @@
         {
             "key": "place",
             "value": "city"
+        },
+        {
+            "key": "place",
+            "value": "farm"
         },
         {
             "key": "place",
@@ -1596,6 +1695,10 @@
         {
             "key": "railway",
             "value": "tram"
+        },
+        {
+            "key": "junction",
+            "value": "roundabout"
         },
         {
             "key": "route",
@@ -1827,6 +1930,10 @@
         {
             "key": "shop",
             "value": "hifi"
+        },
+        {
+            "key": "shop",
+            "value": "houseware"
         },
         {
             "key": "shop",
@@ -2232,11 +2339,19 @@
         },
         {
             "key": "waterway",
+            "value": "fuel"
+        },
+        {
+            "key": "waterway",
             "value": "river"
         },
         {
             "key": "waterway",
             "value": "riverbank"
+        },
+        {
+            "key": "waterway",
+            "value": "sanitary_dump_station"
         },
         {
             "key": "waterway",

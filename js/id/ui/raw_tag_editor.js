@@ -85,7 +85,7 @@ iD.ui.RawTagEditor = function(context) {
         $items.order();
 
         $items.each(function(tag) {
-            var reference = iD.ui.TagReference({key: tag.key}, context);
+            var reference = iD.ui.TagReference({key: tag.key, value: tag.value}, context);
 
             if (state === 'hover') {
                 reference.showing(false);
@@ -192,6 +192,7 @@ iD.ui.RawTagEditor = function(context) {
             var tag = {};
             tag[d.key] = undefined;
             event.change(tag);
+            d3.select(this.parentNode).remove();
         }
 
         function addTag() {

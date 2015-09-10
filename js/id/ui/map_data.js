@@ -8,7 +8,7 @@ iD.ui.MapData = function(context) {
     function map_data(selection) {
 
         function showsFeature(d) {
-            return autoHiddenFeature(d) ? null : context.features().enabled(d);
+            return context.features().enabled(d);
         }
 
         function autoHiddenFeature(d) {
@@ -83,13 +83,10 @@ iD.ui.MapData = function(context) {
             items
                 .classed('active', active)
                 .selectAll('input')
-                .property('checked', active);
-
-            if (name === 'feature') {
-                items
-                    .selectAll('input')
-                    .property('indeterminate', autoHiddenFeature);
-            }
+                .property('checked', active)
+                .property('indeterminate', function(d) {
+                    return (name === 'feature' && autoHiddenFeature(d));
+                });
 
             //exit
             items.exit()
@@ -116,13 +113,6 @@ iD.ui.MapData = function(context) {
                 .property('checked', showsMapillary);
         }
 
-        var content = selection.append('div')
-                .attr('class', 'fillL map-overlay col3 content hide'),
-            tooltip = bootstrap.tooltip()
-                .placement('left')
-                .html(true)
-                .title(iD.ui.tooltipHtml(t('map_data.description'), key));
-
         function hidePanel() { setVisible(false); }
 
         function togglePanel() {
@@ -137,6 +127,7 @@ iD.ui.MapData = function(context) {
                 d3.event.stopPropagation();
             }
             setFill((fillSelected === 'wireframe' ? fillDefault : 'wireframe'));
+            context.map().pan([0,0]);  // trigger a redraw
         }
 
         function setVisible(show) {
@@ -167,7 +158,14 @@ iD.ui.MapData = function(context) {
             }
         }
 
-        var button = selection.append('button')
+
+        var content = selection.append('div')
+                .attr('class', 'fillL map-overlay col3 content hide'),
+            tooltip = bootstrap.tooltip()
+                .placement('left')
+                .html(true)
+                .title(iD.ui.tooltipHtml(t('map_data.description'), key)),
+            button = selection.append('button')
                 .attr('tabindex', -1)
                 .on('click', togglePanel)
                 .call(tooltip),
@@ -309,7 +307,6 @@ iD.ui.MapData = function(context) {
         context.features()
             .on('change.map_data-update', update);
 
-        update();
         setFill(fillDefault);
 
         var keybinding = d3.keybinding('features')

@@ -11,11 +11,11 @@
             "key": "access"
         },
         "type": "access",
-        "label": "Access",
-        "placeholder": "Unknown",
+        "label": "Allowed Access",
+        "placeholder": "Not Specified",
         "strings": {
             "types": {
-                "access": "General",
+                "access": "All",
                 "foot": "Foot",
                 "motor_vehicle": "Motor Vehicles",
                 "bicycle": "Bicycles",
@@ -45,6 +45,10 @@
                 "destination": {
                     "title": "Destination",
                     "description": "Access permitted only to reach a destination"
+                },
+                "dismount": {
+                    "title": "Dismount",
+                    "description": "Access permitted but rider must dismount"
                 }
             }
         }
@@ -52,7 +56,7 @@
     "access_simple": {
         "key": "access",
         "type": "combo",
-        "label": "Access",
+        "label": "Allowed Access",
         "placeholder": "yes",
         "options": [
             "permissive",
@@ -77,9 +81,18 @@
         "keys": [
             "addr:housename",
             "addr:housenumber",
+            "addr:conscriptionnumber",
             "addr:street",
             "addr:city",
-            "addr:postcode"
+            "addr:postcode",
+            "addr:place",
+            "addr:hamlet",
+            "addr:suburb",
+            "addr:subdistrict",
+            "addr:district",
+            "addr:province",
+            "addr:state",
+            "addr:country"
         ],
         "reference": {
             "key": "addr"
@@ -91,6 +104,7 @@
             "placeholders": {
                 "housename": "Housename",
                 "housenumber": "123",
+                "conscriptionnumber": "123",
                 "street": "Street",
                 "city": "City",
                 "postcode": "Postcode",
@@ -177,6 +191,11 @@
         "type": "typeCombo",
         "label": "Type"
     },
+    "area/highway": {
+        "key": "area:highway",
+        "type": "typeCombo",
+        "label": "Type"
+    },
     "artist": {
         "key": "artist_name",
         "type": "text",
@@ -202,6 +221,11 @@
         "type": "typeCombo",
         "label": "Type"
     },
+    "bench": {
+        "key": "bench",
+        "type": "check",
+        "label": "Bench"
+    },
     "bicycle_parking": {
         "key": "bicycle_parking",
         "type": "combo",
@@ -212,6 +236,11 @@
         "type": "combo",
         "label": "Type"
     },
+    "brand": {
+        "key": "brand",
+        "type": "text",
+        "label": "Brand"
+    },
     "building": {
         "key": "building",
         "type": "typeCombo",
@@ -219,7 +248,7 @@
     },
     "building_area": {
         "key": "building",
-        "type": "defaultcheck",
+        "type": "combo",
         "default": "yes",
         "geometry": "area",
         "label": "Building"
@@ -276,6 +305,11 @@
         "type": "combo",
         "label": "Type"
     },
+    "content": {
+        "key": "content",
+        "type": "combo",
+        "label": "Contents"
+    },
     "country": {
         "key": "country",
         "type": "combo",
@@ -306,6 +340,59 @@
         "type": "combo",
         "label": "Cuisine"
     },
+    "cycleway": {
+        "keys": [
+            "cycleway:left",
+            "cycleway:right"
+        ],
+        "reference": {
+            "key": "cycleway"
+        },
+        "type": "cycleway",
+        "label": "Bike Lanes",
+        "placeholder": "none",
+        "strings": {
+            "types": {
+                "cycleway:left": "Left side",
+                "cycleway:right": "Right side"
+            },
+            "options": {
+                "none": {
+                    "title": "None",
+                    "description": "No bike lane"
+                },
+                "lane": {
+                    "title": "Standard bike lane",
+                    "description": "A bike lane separated from auto traffic by a painted line"
+                },
+                "shared_lane": {
+                    "title": "Shared bike lane",
+                    "description": "A bike lane with no separation from auto traffic"
+                },
+                "track": {
+                    "title": "Bike track",
+                    "description": "A bike lane separated from traffic by a physical barrier"
+                },
+                "share_busway": {
+                    "title": "Bike lane shared with bus",
+                    "description": "A bike lane shared with a bus lane"
+                },
+                "opposite_lane": {
+                    "title": "Opposite bike lane",
+                    "description": "A bike lane that travels in the opposite direction of traffic"
+                },
+                "opposite": {
+                    "title": "Contraflow bike lane",
+                    "description": "A bike lane that travels in both directions on a one-way street"
+                }
+            }
+        }
+    },
+    "delivery": {
+        "key": "delivery",
+        "type": "check",
+        "label": "Delivery"
+    },
     "denomination": {
         "key": "denomination",
         "type": "combo",
@@ -320,6 +407,11 @@
         "key": "description",
         "type": "textarea",
         "label": "Description"
+    },
+    "drive_through": {
+        "key": "drive_through",
+        "type": "check",
+        "label": "Drive-Through"
     },
     "electrified": {
         "key": "electrified",
@@ -441,6 +533,23 @@
         "type": "combo",
         "label": "Gauge"
     },
+    "gender": {
+        "type": "radio",
+        "keys": [
+            "male",
+            "female",
+            "unisex"
+        ],
+        "label": "Gender",
+        "placeholder": "Unknown",
+        "strings": {
+            "options": {
+                "male": "Male",
+                "female": "Female",
+                "unisex": "Unisex"
+            }
+        }
+    },
     "generator/method": {
         "key": "generator:method",
         "type": "combo",
@@ -499,6 +608,17 @@
         "type": "combo",
         "label": "Incline"
     },
+    "incline_steps": {
+        "key": "incline",
+        "type": "combo",
+        "label": "Incline",
+        "strings": {
+            "options": {
+                "up": "Up",
+                "down": "Down"
+            }
+        }
+    },
     "information": {
         "key": "information",
         "type": "typeCombo",
@@ -539,6 +659,58 @@
         "type": "combo",
         "label": "Layer"
     },
+    "leaf_cycle": {
+        "key": "leaf_cycle",
+        "type": "combo",
+        "label": "Leaf Cycle",
+        "strings": {
+            "options": {
+                "evergreen": "Evergreen",
+                "deciduous": "Deciduous",
+                "semi_evergreen": "Semi-Evergreen",
+                "semi_deciduous": "Semi-Deciduous",
+                "mixed": "Mixed"
+            }
+        }
+    },
+    "leaf_cycle_singular": {
+        "key": "leaf_cycle",
+        "type": "combo",
+        "label": "Leaf Cycle",
+        "strings": {
+            "options": {
+                "evergreen": "Evergreen",
+                "deciduous": "Deciduous",
+                "semi_evergreen": "Semi-Evergreen",
+                "semi_deciduous": "Semi-Deciduous"
+            }
+        }
+    },
+    "leaf_type": {
+        "key": "leaf_type",
+        "type": "combo",
+        "label": "Leaf Type",
+        "strings": {
+            "options": {
+                "broadleaved": "Broadleaved",
+                "needleleaved": "Needleleaved",
+                "mixed": "Mixed",
+                "leafless": "Leafless"
+            }
+        }
+    },
+    "leaf_type_singular": {
+        "key": "leaf_type",
+        "type": "combo",
+        "label": "Leaf Type",
+        "strings": {
+            "options": {
+                "broadleaved": "Broadleaved",
+                "needleleaved": "Needleleaved",
+                "leafless": "Leafless"
+            }
+        }
+    },
     "leisure": {
         "key": "leisure",
         "type": "typeCombo",
@@ -548,6 +720,12 @@
         "key": "length",
         "type": "number",
         "label": "Length (Meters)"
+    },
+    "level": {
+        "key": "level",
+        "type": "combo",
+        "label": "Level",
+        "universal": true
     },
     "levels": {
         "key": "building:levels",
@@ -786,6 +964,11 @@
         "type": "typeCombo",
         "label": "Type"
     },
+    "power_supply": {
+        "key": "power_supply",
+        "type": "check",
+        "label": "Power Supply"
+    },
     "railway": {
         "key": "railway",
         "type": "typeCombo",
@@ -806,10 +989,31 @@
         "type": "check",
         "label": "Accepts Glass"
     },
+    "recycling/glass_bottles": {
+        "key": "recycling:glass_bottles",
+        "type": "check",
+        "label": "Accepts Glass Bottles"
+    },
     "recycling/paper": {
         "key": "recycling:paper",
         "type": "check",
         "label": "Accepts Paper"
+    },
+    "recycling/plastic": {
+        "key": "recycling:plastic",
+        "type": "check",
+        "label": "Accepts Plastic"
+    },
+    "recycling/type": {
+        "key": "recycling_type",
+        "type": "combo",
+        "label": "Recycling Type",
+        "strings": {
+            "options": {
+                "container": "Container",
+                "centre": "Recycling Center"
+            }
+        }
     },
     "ref": {
         "key": "ref",
@@ -866,6 +1070,11 @@
             }
         }
     },
+    "sanitary_dump_station": {
+        "key": "sanitary_dump_station",
+        "type": "check",
+        "label": "Toilet Disposal"
+    },
     "seasonal": {
         "key": "seasonal",
         "type": "check",
@@ -882,6 +1091,43 @@
             "emergency_access",
             "drive-through"
         ]
+    },
+    "service/bicycle/chain_tool": {
+        "key": "service:bicycle:chain_tool",
+        "type": "check",
+        "label": "Chain Tool",
+        "strings": {
+            "options": {
+                "undefined": "Assumed to be No",
+                "yes": "Yes",
+                "no": "No"
+            }
+        }
+    },
+    "service/bicycle/pump": {
+        "key": "service:bicycle:pump",
+        "type": "check",
+        "label": "Air Pump",
+        "strings": {
+            "options": {
+                "undefined": "Assumed to be No",
+                "yes": "Yes",
+                "no": "No"
+            }
+        }
+    },
+    "service_rail": {
+        "key": "service",
+        "type": "combo",
+        "label": "Service Type",
+        "strings": {
+            "options": {
+                "spur": "Spur",
+                "yard": "Yard",
+                "siding": "Siding",
+                "crossover": "Crossover"
+            }
+        }
     },
     "shelter": {
         "key": "shelter",
@@ -933,7 +1179,7 @@
                 "very_bad": "High Clearance: light duty off-road vehicle",
                 "horrible": "Off-Road: heavy duty off-road vehicle",
                 "very_horrible": "Specialized off-road: tractor, ATV",
-                "impassible": "Impassible / No wheeled vehicle"
+                "impassable": "Impassable / No wheeled vehicle"
             }
         }
     },
@@ -1027,6 +1273,11 @@
             "video"
         ]
     },
+    "substation": {
+        "key": "substation",
+        "type": "typeCombo",
+        "label": "Type"
+    },
     "supervised": {
         "key": "supervised",
         "type": "check",
@@ -1041,6 +1292,19 @@
         "key": "tactile_paving",
         "type": "check",
         "label": "Tactile Paving"
+    },
+    "takeaway": {
+        "key": "takeaway",
+        "type": "combo",
+        "label": "Takeaway",
+        "placeholder": "Yes, No, Takeaway Only...",
+        "strings": {
+            "options": {
+                "yes": "Yes",
+                "no": "No",
+                "only": "Takeaway Only"
+            }
+        }
     },
     "toilets/disposal": {
         "key": "toilets:disposal",
@@ -1096,16 +1360,6 @@
             }
         }
     },
-    "tree_type": {
-        "key": "type",
-        "type": "combo",
-        "label": "Type",
-        "options": [
-            "broad_leaved",
-            "conifer",
-            "palm"
-        ]
-    },
     "trees": {
         "key": "trees",
         "type": "combo",
@@ -1125,6 +1379,11 @@
         "key": "water",
         "type": "combo",
         "label": "Type"
+    },
+    "water_point": {
+        "key": "water_point",
+        "type": "check",
+        "label": "Water Point"
     },
     "waterway": {
         "key": "waterway",
@@ -1167,10 +1426,5 @@
         "icon": "wikipedia",
         "universal": true,
         "label": "Wikipedia"
-    },
-    "wood": {
-        "key": "wood",
-        "type": "combo",
-        "label": "Type"
     }
 }

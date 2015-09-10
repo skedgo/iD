@@ -142,6 +142,7 @@ iD.Background = function(context) {
 
         reader.onload = function(e) {
             gpxLayer.geojson(toGeoJSON.gpx(toDom(e.target.result)));
+            iD.ui.MapInMap.gpxLayer.geojson(toGeoJSON.gpx(toDom(e.target.result)));
             background.zoomToGpxLayer();
             dispatch.change();
         };
@@ -151,20 +152,23 @@ iD.Background = function(context) {
 
     background.zoomToGpxLayer = function() {
         if (background.hasGpxLayer()) {
-            var viewport = context.map().extent().polygon(),
+            var map = context.map(),
+                viewport = map.trimmedExtent().polygon(),
                 coords = _.reduce(gpxLayer.geojson().features, function(coords, feature) {
                     var c = feature.geometry.coordinates;
                     return _.union(coords, feature.geometry.type === 'Point' ? [c] : c);
                 }, []);
 
-            if (!iD.geo.polygonIntersectsPolygon(viewport, coords)) {
-                context.map().extent(d3.geo.bounds(gpxLayer.geojson()));
+            if (!iD.geo.polygonIntersectsPolygon(viewport, coords, true)) {
+                var extent = iD.geo.Extent(d3.geo.bounds(gpxLayer.geojson()));
+                map.centerZoom(extent.center(), map.trimmedExtentZoom(extent));
             }
         }
     };
 
     background.toggleGpxLayer = function() {
         gpxLayer.enable(!gpxLayer.enable());
+        iD.ui.MapInMap.gpxLayer.enable(!iD.ui.MapInMap.gpxLayer.enable());
         dispatch.change();
     };
 
@@ -260,8 +264,11 @@ iD.Background = function(context) {
         var gpx = q.gpx;
         if (gpx) {
             d3.text(gpx, function(err, gpxTxt) {
-                gpxLayer.geojson(toGeoJSON.gpx(toDom(gpxTxt)));
-                dispatch.change();
+                if (!err) {
+                    gpxLayer.geojson(toGeoJSON.gpx(toDom(gpxTxt)));
+                    iD.ui.MapInMap.gpxLayer.geojson(toGeoJSON.gpx(toDom(gpxTxt)));
+                    dispatch.change();
+                }
             });
         }
     };

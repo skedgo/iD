@@ -1,13 +1,17 @@
-iD.Connection = function() {
+iD.Connection = function(useHttps) {
+    if (typeof useHttps !== 'boolean') {
+      useHttps = window.location.protocol === 'https:';
+    }
 
-    var event = d3.dispatch('authenticating', 'authenticated', 'auth', 'loading', 'load', 'loaded'),
-        url = 'http://www.openstreetmap.org',
+    var event = d3.dispatch('authenticating', 'authenticated', 'auth', 'loading', 'loaded'),
+        protocol = useHttps ? 'https:' : 'http:',
+        url = protocol + '//www.openstreetmap.org',
         connection = {},
         inflight = {},
         loadedTiles = {},
         tileZoom = 16,
         oauth = osmAuth({
-            url: 'http://www.openstreetmap.org',
+            url: protocol + '//www.openstreetmap.org',
             oauth_consumer_key: '5A043yRSEugj4DJ5TljuapfnrflWDte8jTOcWLlT',
             oauth_secret: 'aB3jKq1TRsCOUrfOIZ6oQMEDmv2ptV76PA54NGLL',
             loading: authenticating,
@@ -19,7 +23,9 @@ iD.Connection = function() {
         nodeStr = 'node',
         wayStr = 'way',
         relationStr = 'relation',
+        userDetails,
         off;
+
 
     connection.changesetURL = function(changesetId) {
         return url + '/changeset/' + changesetId;
@@ -42,10 +48,10 @@ iD.Connection = function() {
     };
 
     connection.loadFromURL = function(url, callback) {
-        function done(dom) {
-            return callback(null, parse(dom));
+        function done(err, dom) {
+            return callback(err, parse(dom));
         }
-        return d3.xml(url).get().on('load', done);
+        return d3.xml(url).get(done);
     };
 
     connection.loadEntity = function(id, callback) {
@@ -55,9 +61,34 @@ iD.Connection = function() {
         connection.loadFromURL(
             url + '/api/0.6/' + type + '/' + osmID + (type !== 'node' ? '/full' : ''),
             function(err, entities) {
-                event.load(err, {data: entities});
-                if (callback) callback(err, entities && _.find(entities, function(e) { return e.id === id; }));
+                if (callback) callback(err, {data: entities});
             });
+    };
+
+    connection.loadEntityVersion = function(id, version, callback) {
+        var type = iD.Entity.id.type(id),
+            osmID = iD.Entity.id.toOSM(id);
+
+        connection.loadFromURL(
+            url + '/api/0.6/' + type + '/' + osmID + '/' + version,
+            function(err, entities) {
+                if (callback) callback(err, {data: entities});
+            });
+    };
+
+    connection.loadMultiple = function(ids, callback) {
+        _.each(_.groupBy(_.uniq(ids), iD.Entity.id.type), function(v, k) {
+            var type = k + 's',
+                osmIDs = _.map(v, iD.Entity.id.toOSM);
+
+            _.each(_.chunk(osmIDs, 150), function(arr) {
+                connection.loadFromURL(
+                    url + '/api/0.6/' + type + '?' + type + '=' + arr.join(),
+                    function(err, entities) {
+                        if (callback) callback(err, {data: entities});
+                    });
+            });
+        });
     };
 
     function authenticating() {
@@ -66,6 +97,12 @@ iD.Connection = function() {
 
     function authenticated() {
         event.authenticated();
+    }
+
+    function getLoc(attrs) {
+        var lon = attrs.lon && attrs.lon.value,
+            lat = attrs.lat && attrs.lat.value;
+        return [parseFloat(lon), parseFloat(lat)];
     }
 
     function getNodes(obj) {
@@ -101,15 +138,20 @@ iD.Connection = function() {
         return members;
     }
 
+    function getVisible(attrs) {
+        return (!attrs.visible || attrs.visible.value !== 'false');
+    }
+
     var parsers = {
         node: function nodeData(obj) {
             var attrs = obj.attributes;
             return new iD.Node({
                 id: iD.Entity.id.fromOSM(nodeStr, attrs.id.value),
-                loc: [parseFloat(attrs.lon.value), parseFloat(attrs.lat.value)],
+                loc: getLoc(attrs),
                 version: attrs.version.value,
                 user: attrs.user && attrs.user.value,
-                tags: getTags(obj)
+                tags: getTags(obj),
+                visible: getVisible(attrs)
             });
         },
 
@@ -120,7 +162,8 @@ iD.Connection = function() {
                 version: attrs.version.value,
                 user: attrs.user && attrs.user.value,
                 tags: getTags(obj),
-                nodes: getNodes(obj)
+                nodes: getNodes(obj),
+                visible: getVisible(attrs)
             });
         },
 
@@ -131,13 +174,14 @@ iD.Connection = function() {
                 version: attrs.version.value,
                 user: attrs.user && attrs.user.value,
                 tags: getTags(obj),
-                members: getMembers(obj)
+                members: getMembers(obj),
+                visible: getVisible(attrs)
             });
         }
     };
 
     function parse(dom) {
-        if (!dom || !dom.childNodes) return new Error('Bad request');
+        if (!dom || !dom.childNodes) return;
 
         var root = dom.childNodes[0],
             children = root.childNodes,
@@ -166,7 +210,7 @@ iD.Connection = function() {
                     tag: _.map(tags, function(value, key) {
                         return { '@k': key, '@v': value };
                     }),
-                    '@version': 0.3,
+                    '@version': 0.6,
                     '@generator': 'iD'
                 }
             }
@@ -196,7 +240,7 @@ iD.Connection = function() {
 
         return {
             osmChange: {
-                '@version': 0.3,
+                '@version': 0.6,
                 '@generator': 'iD',
                 'create': nest(changes.created.map(rep), ['node', 'way', 'relation']),
                 'modify': nest(changes.modified.map(rep), ['node', 'way', 'relation']),
@@ -206,13 +250,16 @@ iD.Connection = function() {
     };
 
     connection.changesetTags = function(comment, imageryUsed) {
-        var tags = {
-            imagery_used: imageryUsed.join(';').substr(0, 255),
-            created_by: 'iD ' + iD.version
-        };
+        var detected = iD.detect(),
+            tags = {
+                created_by: 'iD ' + iD.version,
+                imagery_used: imageryUsed.join(';').substr(0, 255),
+                host: (window.location.origin + window.location.pathname).substr(0, 255),
+                locale: detected.locale
+            };
 
         if (comment) {
-            tags.comment = comment;
+            tags.comment = comment.substr(0, 255);
         }
 
         return tags;
@@ -233,17 +280,17 @@ iD.Connection = function() {
                     content: JXON.stringify(connection.osmChangeJXON(changeset_id, changes))
                 }, function(err) {
                     if (err) return callback(err);
+                    // POST was successful, safe to call the callback.
+                    // Still attempt to close changeset, but ignore response because #2667
+                    // Add delay to allow for postgres replication #1646 #2678
+                    window.setTimeout(function() { callback(null, changeset_id); }, 2500);
                     oauth.xhr({
                         method: 'PUT',
                         path: '/api/0.6/changeset/' + changeset_id + '/close'
-                    }, function(err) {
-                        callback(err, changeset_id);
-                    });
+                    }, d3.functor(true));
                 });
             });
     };
-
-    var userDetails;
 
     connection.userDetails = function(callback) {
         if (userDetails) {
@@ -292,7 +339,7 @@ iD.Connection = function() {
         return connection;
     };
 
-    connection.loadTiles = function(projection, dimensions) {
+    connection.loadTiles = function(projection, dimensions, callback) {
 
         if (off) return;
 
@@ -345,7 +392,7 @@ iD.Connection = function() {
                 loadedTiles[id] = true;
                 delete inflight[id];
 
-                event.load(err, _.extend({data: parsed}, tile));
+                if (callback) callback(err, _.extend({data: parsed}, tile));
 
                 if (_.isEmpty(inflight)) {
                     event.loaded();
@@ -371,6 +418,7 @@ iD.Connection = function() {
     };
 
     connection.flush = function() {
+        userDetails = undefined;
         _.forEach(inflight, abortRequest);
         loadedTiles = {};
         inflight = {};
@@ -384,12 +432,14 @@ iD.Connection = function() {
     };
 
     connection.logout = function() {
+        userDetails = undefined;
         oauth.logout();
         event.auth();
         return connection;
     };
 
     connection.authenticate = function(callback) {
+        userDetails = undefined;
         function done(err, res) {
             event.auth();
             if (callback) callback(err, res);

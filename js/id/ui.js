@@ -32,6 +32,16 @@ iD.ui = function(context) {
             .attr('id', 'map')
             .call(map);
 
+        content.append('div')
+            .attr('class', 'map-in-map')
+            .style('display', 'none')
+            .call(iD.ui.MapInMap(context));
+
+        content.append('div')
+            .attr('class', 'infobox fillD2')
+            .style('display', 'none')
+            .call(iD.ui.Info(context));
+
         bar.append('div')
             .attr('class', 'spacer col4');
 
@@ -51,12 +61,12 @@ iD.ui = function(context) {
             .call(iD.ui.Save(context));
 
         bar.append('div')
+            .attr('class', 'full-screen')
+            .call(iD.ui.FullScreen(context));
+
+        bar.append('div')
             .attr('class', 'spinner')
             .call(iD.ui.Spinner(context));
-
-        content.append('div')
-            .style('display', 'none')
-            .attr('class', 'help-wrap map-overlay fillL col5 content');
 
         var controls = bar.append('div')
             .attr('class', 'map-controls');
@@ -91,6 +101,10 @@ iD.ui = function(context) {
         var footer = about.append('div')
             .attr('id', 'footer')
             .attr('class', 'fillD');
+
+        footer.append('div')
+            .attr('class', 'api-status')
+            .call(iD.ui.Status(context));
 
         footer.append('div')
             .attr('id', 'scale-block')
@@ -136,10 +150,6 @@ iD.ui = function(context) {
             .attr('tabindex', -1)
             .call(iD.ui.Contributors(context));
 
-        footer.append('div')
-            .attr('class', 'api-status')
-            .call(iD.ui.Status(context));
-
         window.onbeforeunload = function() {
             return context.save();
         };
@@ -148,25 +158,37 @@ iD.ui = function(context) {
             context.history().unlock();
         };
 
+        var mapDimensions = map.dimensions();
+
         d3.select(window).on('resize.editor', function() {
+            mapDimensions = m.dimensions();
             map.dimensions(m.dimensions());
         });
 
         function pan(d) {
             return function() {
+                d3.event.preventDefault();
                 context.pan(d);
             };
         }
 
         // pan amount
-        var pa = 5;
+        var pa = 10;
 
         var keybinding = d3.keybinding('main')
             .on('⌫', function() { d3.event.preventDefault(); })
             .on('←', pan([pa, 0]))
             .on('↑', pan([0, pa]))
             .on('→', pan([-pa, 0]))
-            .on('↓', pan([0, -pa]));
+            .on('↓', pan([0, -pa]))
+            .on('⇧←', pan([mapDimensions[0], 0]))
+            .on('⇧↑', pan([0, mapDimensions[1]]))
+            .on('⇧→', pan([-mapDimensions[0], 0]))
+            .on('⇧↓', pan([0, -mapDimensions[1]]))
+            .on(iD.ui.cmd('⌘←'), pan([mapDimensions[0], 0]))
+            .on(iD.ui.cmd('⌘↑'), pan([0, mapDimensions[1]]))
+            .on(iD.ui.cmd('⌘→'), pan([-mapDimensions[0], 0]))
+            .on(iD.ui.cmd('⌘↓'), pan([0, -mapDimensions[1]]));
 
         d3.select(document)
             .call(keybinding);

@@ -35,7 +35,7 @@
             "landuse/industrial",
             "landuse/commercial",
             "landuse/retail",
-            "landuse/farm",
+            "landuse/farmland",
             "landuse/farmyard",
             "landuse/forest",
             "landuse/meadow",
@@ -48,6 +48,7 @@
         "name": "Path",
         "icon": "category-path",
         "members": [
+            "highway/pedestrian",
             "highway/footway",
             "highway/cycleway",
             "highway/bridleway",

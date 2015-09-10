@@ -21,7 +21,6 @@ iD.ui.Help = function(context) {
     });
 
     function help(selection) {
-        var shown = false;
 
         function hide() {
             setVisible(false);
@@ -37,7 +36,11 @@ iD.ui.Help = function(context) {
             if (show !== shown) {
                 button.classed('active', show);
                 shown = show;
+
                 if (show) {
+                    selection.on('mousedown.help-inside', function() {
+                        return d3.event.stopPropagation();
+                    });
                     pane.style('display', 'block')
                         .style('right', '-500px')
                         .transition()
@@ -51,13 +54,14 @@ iD.ui.Help = function(context) {
                         .each('end', function() {
                             d3.select(this).style('display', 'none');
                         });
+                    selection.on('mousedown.help-inside', null);
                 }
             }
         }
 
         function clickHelp(d, i) {
             pane.property('scrollTop', 0);
-            doctitle.text(d.title);
+            doctitle.html(d.title);
             body.html(d.html);
             body.selectAll('a')
                 .attr('target', '_blank');
@@ -74,7 +78,7 @@ iD.ui.Help = function(context) {
                         clickHelp(docs[i - 1], i - 1);
                     });
                 prevLink.append('span').attr('class', 'icon back blue');
-                prevLink.append('span').text(docs[i - 1].title);
+                prevLink.append('span').html(docs[i - 1].title);
             }
             if (i < docs.length - 1) {
                 var nextLink = nav.append('a')
@@ -82,7 +86,7 @@ iD.ui.Help = function(context) {
                     .on('click', function() {
                         clickHelp(docs[i + 1], i + 1);
                     });
-                nextLink.append('span').text(docs[i + 1].title);
+                nextLink.append('span').html(docs[i + 1].title);
                 nextLink.append('span').attr('class', 'icon forward blue');
             }
         }
@@ -92,21 +96,22 @@ iD.ui.Help = function(context) {
             setVisible(false);
         }
 
-        var tooltip = bootstrap.tooltip()
-            .placement('left')
-            .html(true)
-            .title(iD.ui.tooltipHtml(t('help.title'), key));
 
-        var button = selection.append('button')
-            .attr('tabindex', -1)
-            .on('click', toggle)
-            .call(tooltip);
+        var pane = selection.append('div')
+                .attr('class', 'help-wrap map-overlay fillL col5 content hide'),
+            tooltip = bootstrap.tooltip()
+                .placement('left')
+                .html(true)
+                .title(iD.ui.tooltipHtml(t('help.title'), key)),
+            button = selection.append('button')
+                .attr('tabindex', -1)
+                .on('click', toggle)
+                .call(tooltip),
+            shown = false;
 
         button.append('span')
             .attr('class', 'icon help light');
 
-        var pane = context.container()
-            .select('.help-wrap');
 
         var toc = pane.append('ul')
             .attr('class', 'toc');
@@ -116,7 +121,7 @@ iD.ui.Help = function(context) {
             .enter()
             .append('li')
             .append('a')
-            .text(function(d) { return d.title; })
+            .html(function(d) { return d.title; })
             .on('click', clickHelp);
 
         toc.append('li')
@@ -148,12 +153,7 @@ iD.ui.Help = function(context) {
             .call(keybinding);
 
         context.surface().on('mousedown.help-outside', hide);
-        context.container().on('mousedown.b.help-outside', hide);
-
-        pane.on('mousedown.help-inside', function() {
-            return d3.event.stopPropagation();
-        });
-
+        context.container().on('mousedown.help-outside', hide);
     }
 
     return help;

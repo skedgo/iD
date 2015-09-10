@@ -30,6 +30,14 @@ iD.util.displayName = function(entity) {
     return entity.tags[localeName] || entity.tags.name || entity.tags.ref;
 };
 
+iD.util.displayType = function(id) {
+    return {
+        n: t('inspector.node'),
+        w: t('inspector.way'),
+        r: t('inspector.relation')
+    }[id.charAt(0)];
+};
+
 iD.util.stringQs = function(str) {
     return str.split('&').reduce(function(obj, pair){
         var parts = pair.split('=');
@@ -131,7 +139,7 @@ iD.util.editDistance = function(a, b) {
 // 1. Only works on HTML elements, not SVG
 // 2. Does not cause style recalculation
 iD.util.fastMouse = function(container) {
-    var rect = _.clone(container.getBoundingClientRect()),
+    var rect = container.getBoundingClientRect(),
         rectLeft = rect.left,
         rectTop = rect.top,
         clientLeft = +container.clientLeft,
@@ -143,8 +151,9 @@ iD.util.fastMouse = function(container) {
     };
 };
 
-/* jshint -W103 */
+/* eslint-disable no-proto */
 iD.util.getPrototypeOf = Object.getPrototypeOf || function(obj) { return obj.__proto__; };
+/* eslint-enable no-proto */
 
 iD.util.asyncMap = function(inputs, func, callback) {
     var remaining = inputs.length,
@@ -155,7 +164,7 @@ iD.util.asyncMap = function(inputs, func, callback) {
         func(d, function done(err, data) {
             errors[i] = err;
             results[i] = data;
-            remaining --;
+            remaining--;
             if (!remaining) callback(errors, results);
         });
     });
